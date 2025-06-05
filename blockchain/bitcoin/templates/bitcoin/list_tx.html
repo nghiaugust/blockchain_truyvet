@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách Giao dịch Bất thường Bitcoin</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js"></script>
+    <style>
+      body {
+        background-color: #f8f9fa;
+      }
+      #mynetwork {
+        width: 100%;
+        height: 60vh;
+        border: 1px solid lightgray;
+        background-color: #ffffff;
+      }
+      .transaction-list {
+        font-size: 0.8rem;
+      }
+      .loading-spinner,
+      .graph-loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+      }
+      .tx-item {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+      }
+      .tx-item:hover {
+        background-color: #e9ecef;
+      }
+      .tx-item.highlight {
+        background-color: #d1ecf1;
+        border-left: 5px solid #0c5460;
+      }
+      .tx-item-compact {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .address-item.highlight-address {
+        background-color: #fff3cd;
+        border-radius: 5px;
+        padding: 2px 3px;
+        font-weight: bold;
+        border-left: 3px solid #ffc107;
+      }
+      #legend {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-top: 1px solid lightgray;
+      }
+      #legend span {
+        margin-right: 15px;
+      }
+      #legend i {
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+
+      /* CSS cho nút ẩn/hiện thống kê */
+      .card-header .toggle-btn {
+        cursor: pointer;
+        transition: transform 0.3s;
+      }
+
+      .card-header .toggle-btn.collapsed {
+        transform: rotate(180deg);
+      }
+
+      /* CSS để thêm hiệu ứng chuyển động mượt mà khi ẩn/hiện */
+      .collapsible-content {
+        transition: max-height 0.3s ease-out;
+        overflow: hidden;
+      }
+
+      /* CSS cho form lọc */
+      .form-filter label {
+        font-weight: 500;
+        font-size: 0.9rem;
+      }
+
+      .anomaly-pill {
+        font-weight: bold;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+      }
+
+      .danger-anomaly {
+        background-color: #ffcccc;
+        color: #dc3545;
+      }
+
+      .warning-anomaly {
+        background-color: #fff3cd;
+        color: #fd7e14;
+      }
+
+      .normal-anomaly {
+        background-color: #d1e7dd;
+        color: #198754;
+      }
+
+      .stats-box {
+        background: #f8f9fa;
+        border-left: 4px solid #198754;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .stats-box h6 {
+        color: #343a40;
+        margin-bottom: 8px;
+      }
+
+      .stats-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #0d6efd;
+      }
+
+      .tx-hash {
+        font-family: monospace;
+        font-size: 0.85rem;
+      }
+
+      .tx-details-section {
+        margin-bottom: 15px;
+      }
+
+      .tx-details-section .title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #343a40;
+      }
+
+      .tx-details-table {
+        width: 100%;
+        font-size: 0.9rem;
+      }
+
+      .tx-details-table td {
+        padding: 5px;
+      }
+
+      .tx-details-table td:first-child {
+        font-weight: 500;
+        width: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    {% include "bitcoin/sidebar.html" %}
+    <div class="container-fluid mt-3">
+      <h1 class="text-center mb-4">Danh sách Giao dịch Bất thường Bitcoin</h1>
+
+      <div class="row mb-3">
+        <div class="col-md-12">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">Bộ lọc giao dịch</h5>
+            </div>
+            <div class="card-body">
+              <form id="txFilterForm" class="form-filter">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label for="limitInput" class="form-label"
+                      >Số lượng giao dịch
+                      <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="limitInput"
+                      name="limit"
+                      placeholder="VD: 20"
+                      value="20"
+                      min="1"
+                      max="100"
+                      required
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="blockInput" class="form-label">Khối</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="blockInput"
+                      name="block"
+                      placeholder="VD: 898421"
+                      min="0"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="startDateInput" class="form-label"
+                      >Ngày bắt đầu</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control datepicker"
+                      id="startDateInput"
+                      name="start_date"
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="endDateInput" class="form-label"
+                      >Ngày kết thúc</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control datepicker"
+                      id="endDateInput"
+                      name="end_date"
+                      placeholder="YYYY-MM-DD"
+                    />
+                  </div>
+                  <div class="col-12 mt-3">
+                    <div class="d-flex justify-content-end">
+                      <button
+                        type="reset"
+                        class="btn btn-outline-secondary me-2"
+                      >
+                        <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                      </button>
+                      <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-filter"></i> Lọc Giao dịch
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Cột bên trái: Đồ thị -->
+        <div class="col-lg-8">
+          <div class="card shadow-sm mb-3">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              Trực quan hóa Đồ thị
+              <div>
+                <button
+                  id="fitGraph"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Căn chỉnh đồ thị"
+                >
+                  <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+                <button
+                  id="zoomIn"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Phóng to"
+                >
+                  <i class="bi bi-zoom-in"></i>
+                </button>
+                <button
+                  id="zoomOut"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Thu nhỏ"
+                >
+                  <i class="bi bi-zoom-out"></i>
+                </button>
+                <button
+                  id="expandAllButton"
+                  class="btn btn-sm btn-outline-primary"
+                  title="Mở rộng tất cả node con chưa truy vấn"
+                >
+                  <i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc
+                </button>
+                <div class="form-check form-check-inline ms-2">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="togglePhysics"
+                    checked
+                  />
+                  <label class="form-check-label small" for="togglePhysics">
+                    Physics
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-0 position-relative">
+              <div id="mynetwork"></div>
+              <div
+                id="graphLoadingSpinner"
+                class="graph-loading-spinner"
+                style="display: none"
+              >
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Đang tải...</span>
+                </div>
+              </div>
+            </div>
+            <div id="legend" class="card-footer text-muted small">
+              <strong>Chú thích:</strong>
+              <div class="d-flex flex-wrap mt-1">
+                <span
+                  ><i class="bi bi-square-fill text-info"></i> Giao dịch trung
+                  tâm</span
+                >
+                <span
+                  ><i class="bi bi-star-fill text-danger"></i> Địa chỉ trung
+                  tâm</span
+                >
+                <span
+                  ><i class="bi bi-circle-fill text-warning"></i> Địa chỉ đã
+                  truy vấn</span
+                >
+                <span
+                  ><i class="bi bi-circle-fill text-primary"></i> Địa chỉ</span
+                >
+                <span
+                  ><i class="bi bi-square-fill text-success"></i> Giao
+                  dịch</span
+                >
+                <span
+                  ><i class="bi bi-square-fill text-danger"></i> Giao dịch bất
+                  thường</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cột bên phải: Thống kê và danh sách -->
+        <div class="col-lg-4">
+          <div class="card shadow-sm mb-3">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <span>Thống kê bất thường</span>
+              <button
+                class="btn btn-sm btn-link toggle-btn"
+                data-bs-toggle="collapse"
+                data-bs-target="#statsCollapse"
+                aria-expanded="true"
+              >
+                <i class="bi bi-chevron-up"></i>
+              </button>
+            </div>
+            <div id="statsCollapse" class="collapse show">
+              <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                  <div>
+                    <span class="badge bg-danger me-2">Điểm &gt; 7</span>
+                    <span class="badge bg-warning text-dark me-2"
+                      >Điểm 4-7</span
+                    >
+                    <span class="badge bg-success me-2">Điểm &lt; 4</span>
+                  </div>
+                  <div>
+                    <div
+                      id="loadingSpinner"
+                      class="spinner-border spinner-border-sm text-primary me-2"
+                      style="display: none"
+                    >
+                      <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <span id="resultCount" class="fw-bold">0 kết quả</span>
+                  </div>
+                </div>
+
+                <div class="row gx-3 gy-2 mb-2">
+                  <div class="col-md-6">
+                    <div class="stats-box">
+                      <h6 class="m-0">Giao dịch nguy hiểm</h6>
+                      <span id="highRiskCount" class="stats-number">0</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="stats-box">
+                      <h6 class="m-0">Giao dịch có rủi ro</h6>
+                      <span id="mediumRiskCount" class="stats-number">0</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="stats-box">
+                      <h6 class="m-0">Giao dịch an toàn</h6>
+                      <span id="lowRiskCount" class="stats-number">0</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="stats-box">
+                      <h6 class="m-0">Tổng số Bitcoin</h6>
+                      <span id="totalBitcoin" class="stats-number">0 BTC</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Danh sách giao dịch thu gọn -->
+                <div
+                  id="transactionList"
+                  class="transaction-list py-2"
+                  style="height: 30vh; overflow-y: auto"
+                >
+                  <p class="text-center text-muted">
+                    Chưa có dữ liệu. Vui lòng sử dụng bộ lọc để tìm kiếm.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Chi tiết giao dịch -->
+          <div class="card shadow-sm">
+            <div class="card-header">Chi tiết Giao dịch</div>
+            <div class="card-body" style="max-height: 55vh; overflow-y: auto">
+              <div id="txDetails" class="small">
+                <p class="text-muted text-center">
+                  Chọn một giao dịch để xem chi tiết
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.9.0/dist/locales/bootstrap-datepicker.vi.min.js"></script>
+
+    <script type="text/javascript">
+      // Khai báo biến global
+      let queriedAddresses = new Set();
+      let network = null;
+      let nodes = new vis.DataSet([]);
+      let edges = new vis.DataSet([]);
+      let allGraphNodes = {};
+      let centerNodeId = null;
+      let isExpanding = false;
+
+      function showLoading(show) {
+        $("#loadingSpinner").toggle(show);
+      }
+
+      function formatDate(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("vi-VN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function getAnomalyClass(score) {
+        if (score > 7) return "danger-anomaly";
+        if (score >= 4) return "warning-anomaly";
+        return "normal-anomaly";
+      }
+
+      const options = {
+        nodes: {
+          shape: "dot",
+          size: 16,
+          font: { size: 12, color: "#343a40" },
+          borderWidth: 2,
+        },
+        edges: {
+          width: 2,
+          font: {
+            size: 11,
+            align: "middle",
+            strokeWidth: 3,
+            strokeColor: "#ffffff",
+          },
+          color: { inherit: "from", highlight: "#ff0000", hover: "#d3d3d3" },
+          smooth: {
+            type: "cubicBezier",
+            forceDirection: "horizontal",
+            roundness: 0.4,
+          },
+          arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+        },
+        physics: {
+          enabled: true,
+          solver: "barnesHut",
+          barnesHut: {
+            gravitationalConstant: -10000,
+            centralGravity: 0.3,
+            springLength: 120,
+            springConstant: 0.04,
+            damping: 0.09,
+            avoidOverlap: 0.2,
+          },
+          stabilization: { iterations: 150 },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200,
+          navigationButtons: false,
+          keyboard: true,
+        },
+        groups: {
+          center_transaction: {
+            color: { background: "#0dcaf0", border: "#3dd5f3" },
+            shape: "box",
+            size: 20,
+            font: { size: 14, color: "#000" },
+          },
+          center_address: {
+            color: { background: "#dc3545", border: "#bd2130" },
+            shape: "star",
+            size: 25,
+          },
+          queried_address: {
+            color: { background: "#ffc107", border: "#e0a800" },
+            shape: "dot",
+            size: 20,
+          },
+          address: {
+            color: { background: "#0d6efd", border: "#0b5ed7" },
+            shape: "dot",
+            size: 20,
+          },
+          transaction: {
+            color: { background: "#198754", border: "#157347" },
+            shape: "square",
+            size: 12,
+          },
+          anomaly_transaction: {
+            // Giao dịch BẤT THƯỜNG
+            color: { background: "#dc3545", border: "#bd2130" }, // Đỏ
+            shape: "square", // Vẫn là hình vuông
+            size: 15, // Có thể cho lớn hơn một chút
+            borderWidth: 3,
+          },
+        },
+      };
+
+      function initNetwork() {
+        const container = document.getElementById("mynetwork");
+        const data = { nodes: nodes, edges: edges };
+        network = new vis.Network(container, data, options);
+
+        network.on("click", function (params) {
+          if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = allGraphNodes[nodeId]; // Lấy dữ liệu gốc
+
+            // Xử lý theo loại node
+            if (nodeData && nodeData.group.includes("transaction")) {
+              highlightTransaction(nodeData.id);
+            } else if (nodeData && !nodeData.group.includes("transaction")) {
+              highlightAddress(nodeData.id);
+            }
+          }
+        });
+
+        network.on("doubleClick", function (params) {
+          if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = allGraphNodes[nodeId];
+            if (nodeData && !nodeData.group.includes("transaction")) {
+              // Double-click vào địa chỉ để mở rộng đồ thị
+              loadGraph(nodeData.id, false)
+                .then(() => {
+                  network.fit();
+                })
+                .catch((error) => {
+                  console.error("Lỗi khi mở rộng đồ thị:", error);
+                });
+            }
+          }
+        });
+      }
+
+      function showGraphLoading(show) {
+        $("#graphLoadingSpinner").toggle(show);
+      }
+
+      function loadGraph(graphId, clearGraph, isTxHash = false) {
+        return new Promise((resolve, reject) => {
+          if (!clearGraph && !isTxHash && queriedAddresses.has(graphId)) {
+            console.log("Địa chỉ đã được truy vấn trước đó:", graphId);
+            resolve();
+            return;
+          }
+          if (!clearGraph && isTxHash) {
+            console.log("Chỉ tải dữ liệu mới cho TX:", graphId);
+          }
+
+          showGraphLoading(true);
+          const url = isTxHash
+            ? `/api/transaction/${graphId}/graph/`
+            : `/api/address/${graphId}/transactions/`;
+
+          if (!isTxHash) {
+            queriedAddresses.add(graphId);
+          }
+
+          if (clearGraph) {
+            nodes.clear();
+            edges.clear();
+            allGraphNodes = {};
+            centerNodeId = null;
+            queriedAddresses.clear();
+          }
+
+          $.ajax({
+            url: url,
+            method: "GET",
+            success: function (data) {
+              if (data.nodes && data.nodes.length > 0) {
+                // Lưu dữ liệu gốc và lọc các node mới
+                const newNodes = [];
+                data.nodes.forEach((node) => {
+                  allGraphNodes[node.id] = node;
+
+                  // Chỉ thêm node nếu chưa tồn tại
+                  if (!nodes.get(node.id)) {
+                    newNodes.push(node);
+                  } else {
+                    // Cập nhật group cho node đã tồn tại nếu cần
+                    const existingNode = nodes.get(node.id);
+                    if (
+                      queriedAddresses.has(node.id) &&
+                      existingNode.group === "address"
+                    ) {
+                      nodes.update({ id: node.id, group: "queried_address" });
+                    }
+                  }
+                });
+
+                // Thêm các node mới vào dataset
+                if (newNodes.length > 0) {
+                  nodes.add(newNodes);
+                }
+
+                // Lọc và thêm các edge mới
+                const newEdges = [];
+                if (data.edges && data.edges.length > 0) {
+                  data.edges.forEach((edge) => {
+                    // Tạo edgeId duy nhất
+                    const edgeId = `${edge.from}-${edge.to}-${
+                      edge.label ? edge.label.replace(/[\s.]/g, "") : "nolabel"
+                    }`;
+
+                    // Chỉ thêm edge nếu chưa tồn tại
+                    if (!edges.get(edgeId)) {
+                      edge.id = edgeId;
+                      newEdges.push(edge);
+                    }
+                  });
+
+                  if (newEdges.length > 0) {
+                    edges.add(newEdges);
+                  }
+                }
+
+                // Cập nhật centerNodeId nếu đây là lần tải đầu tiên
+                if (!centerNodeId) {
+                  centerNodeId = data.center_node_id || data.nodes[0].id;
+                }
+
+                // Hiển thị các địa chỉ có thể mở rộng
+                const expandableAddresses = data.nodes
+                  .filter(
+                    (node) =>
+                      !node.group.includes("transaction") &&
+                      !queriedAddresses.has(node.id) &&
+                      node.id !== graphId
+                  )
+                  .map((node) => node.id);
+
+                if (data.transactions && data.transactions.length > 0) {
+                  data.transactions.forEach((tx) => {
+                    const txHash = tx.tx_hash || tx.hash || "unknown";
+
+                    // Chỉ thêm giao dịch nếu chưa tồn tại trong danh sách
+                    if ($(`#tx-${txHash}`).length === 0) {
+                      const anomalyScore =
+                        tx.anomaly_score || tx.risk_score || 5;
+                      const anomalyClass = getAnomalyClass(anomalyScore);
+                      const txItemHtml = `
+                        <div id="tx-${txHash}" class="tx-item" data-tx='${JSON.stringify(
+                        tx
+                      ).replace(/'/g, "&#39;")}' data-tx-hash="${txHash}">
+                          <div class="tx-item-compact">
+                            <span class="tx-hash">${
+                              txHash ? txHash.substring(0, 10) : "unknown"
+                            }...</span>
+                            <span class="anomaly-pill ${anomalyClass}">${
+                        typeof anomalyScore === "number"
+                          ? anomalyScore.toFixed(1)
+                          : anomalyScore
+                      }</span>
+                          </div>
+                        </div>
+                      `;
+                      $("#transactionList").append(txItemHtml);
+                    }
+                  });
+
+                  // Tính toán thống kê dựa trên tổng số giao dịch hiện có trong danh sách
+                  const allTxElements = $("#transactionList .tx-item");
+                  let highRisk = 0,
+                    mediumRisk = 0,
+                    lowRisk = 0;
+
+                  allTxElements.each(function () {
+                    const txData = JSON.parse(
+                      $(this).attr("data-tx").replace(/&#39;/g, "'")
+                    );
+                    const score =
+                      txData.anomaly_score || txData.risk_score || 5;
+                    if (score > 7) {
+                      highRisk++;
+                    } else if (score >= 4 && score <= 7) {
+                      mediumRisk++;
+                    } else {
+                      lowRisk++;
+                    }
+                  });
+
+                  $("#highRiskCount").text(highRisk);
+                  $("#mediumRiskCount").text(mediumRisk);
+                  $("#lowRiskCount").text(lowRisk);
+                  $("#resultCount").text(`${allTxElements.length} kết quả`);
+                } else {
+                  // Chỉ hiển thị thông báo nếu danh sách giao dịch trống
+                  if ($("#transactionList .tx-item").length === 0) {
+                    $("#transactionList").html(
+                      '<p class="text-center text-muted">Không có giao dịch nào được tìm thấy.</p>'
+                    );
+                  }
+                }
+              } else {
+                console.warn("Không có dữ liệu đồ thị được trả về");
+              }
+
+              // Cập nhật button mở rộng
+              updateExpandAllButton();
+
+              showGraphLoading(false);
+              resolve(data);
+            },
+            error: function (error) {
+              console.error("Lỗi khi tải đồ thị:", error);
+              showGraphLoading(false);
+              reject(error);
+            },
+          });
+        });
+      }
+
+      function updateExpandAllButton() {
+        // Đếm số lượng địa chỉ chưa được truy vấn
+        const addressesToExpand = nodes.get({
+          filter: function (node) {
+            return (
+              !node.group.includes("transaction") &&
+              !queriedAddresses.has(node.id)
+            );
+          },
+        });
+
+        const button = $("#expandAllButton");
+        if (addressesToExpand.length > 0) {
+          button
+            .prop("disabled", false)
+            .text(`Mở rộng (${addressesToExpand.length})`);
+        } else {
+          button.prop("disabled", true).text("Không có địa chỉ để mở rộng");
+        }
+      }
+
+      async function expandSequentially(addressesToExpand) {
+        isExpanding = true;
+        const button = $("#expandAllButton");
+        button
+          .prop("disabled", true)
+          .html(
+            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Đang mở rộng...'
+          );
+
+        for (const address of addressesToExpand) {
+          if (!queriedAddresses.has(address)) {
+            try {
+              await loadGraph(address, false);
+            } catch (error) {
+              console.error(`Lỗi khi mở rộng địa chỉ ${address}:`, error);
+            }
+          }
+        }
+
+        isExpanding = false;
+        button
+          .prop("disabled", false)
+          .html('<i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc');
+        console.log("Expansion complete.");
+      }
+      function displayTransactionDetails(tx) {
+        // Tạo HTML hiển thị chi tiết giao dịch
+        let inputSummary = "";
+        if (tx.inputs && Array.isArray(tx.inputs) && tx.inputs.length > 0) {
+          inputSummary = tx.inputs
+            .map((input) => {
+              const address = input.address || "Unknown";
+              const value = input.value || 0;
+              return `<div class="d-flex align-items-center w-100 mb-1">
+                  <span class="address-item" data-address="${address}">
+                    ${
+                      address && address.length > 10
+                        ? address.substring(0, 10) + "..."
+                        : address
+                    }
+                  </span>
+                  <button class="btn btn-sm btn-link p-0 ms-1 copy-btn" title="Copy địa chỉ" data-clipboard="${address}">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                  <span class="ms-auto">${(value / 100000000).toFixed(
+                    8
+                  )} BTC</span>
+                </div>`;
+            })
+            .join("");
+        }
+
+        let outputSummary = "";
+        if (tx.outputs && Array.isArray(tx.outputs) && tx.outputs.length > 0) {
+          outputSummary = tx.outputs
+            .map((output) => {
+              const address = output.address || "Unknown";
+              const value = output.value || 0;
+              return `<div class="d-flex align-items-center w-100 mb-1">
+                  <span class="address-item" data-address="${address}">
+                    ${
+                      address && address.length > 10
+                        ? address.substring(0, 10) + "..."
+                        : address
+                    }
+                  </span>
+                  <button class="btn btn-sm btn-link p-0 ms-1 copy-btn" title="Copy địa chỉ" data-clipboard="${address}">
+                    <i class="bi bi-clipboard"></i>
+                  </button>
+                  <span class="ms-auto">${(value / 100000000).toFixed(
+                    8
+                  )} BTC</span>
+                </div>`;
+            })
+            .join("");
+        }
+        const anomalyClass = getAnomalyClass(tx.anomaly_score);
+        const totalValue = tx.total_value || 0;
+        const anomalyScore = tx.anomaly_score || 5;
+        const hash = tx.hash || "";
+        const block = tx.block || "";
+
+        // Kiểm tra nếu cần hiển thị chi tiết đầy đủ hoặc chỉ hiển thị thông tin cơ bản
+        if (!inputSummary && !outputSummary) {
+          $("#txDetails").html(`
+            <div class="tx-details-section">
+              <div class="title">Thông tin giao dịch</div>
+              <table class="tx-details-table">
+                <tr>
+                  <td>Hash:</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="tx-hash">${hash}</span>
+                      <button class="btn btn-sm btn-link p-0 ms-1 copy-btn" title="Copy hash" data-clipboard="${hash}">
+                        <i class="bi bi-clipboard"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Thời gian:</td>
+                  <td>${tx.timestamp || tx.time || ""}</td>
+                </tr>
+                <tr>
+                  <td>Khối:</td>
+                  <td>${block}</td>
+                </tr>
+                <tr>
+                  <td>Phí giao dịch:</td>
+                  <td>${
+                    tx.fee ? (tx.fee / 100000000).toFixed(8) : "0.00000000"
+                  } BTC</td>
+                </tr>
+                <tr>
+                  <td>Tổng giá trị:</td>
+                  <td>${(totalValue / 100000000).toFixed(8)} BTC</td>
+                </tr>
+              </table>
+              <p class="text-center mt-4 text-muted">
+                <i class="bi bi-info-circle"></i>
+                Click vào Hash giao dịch để xem chi tiết trên Blockchain Explorer
+              </p>
+            </div>
+          `);
+        } else {
+          $("#txDetails").html(`
+            <div class="tx-details-section">
+              <div class="title">Thông tin giao dịch</div>
+              <table class="tx-details-table">
+                <tr>
+                  <td>Hash:</td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="tx-hash">${hash}</span>
+                      <button class="btn btn-sm btn-link p-0 ms-1 copy-btn" title="Copy hash" data-clipboard="${hash}">
+                        <i class="bi bi-clipboard"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Thời gian:</td>
+                  <td>${formatDate(tx.timestamp)}</td>
+                </tr>
+                <tr>
+                  <td>Khối:</td>
+                  <td>${block}</td>
+                </tr>
+                <tr>
+                  <td>Điểm bất thường:</td>
+                  <td><span class="anomaly-pill ${anomalyClass}">${
+            typeof anomalyScore === "number"
+              ? anomalyScore.toFixed(1)
+              : anomalyScore
+          }</span></td>
+                </tr>
+                <tr>
+                  <td>Tổng giá trị:</td>
+                  <td>${(totalValue / 100000000).toFixed(8)} BTC</td>
+                </tr>
+              </table>
+            </div>
+
+            <div class="tx-details-section">
+              <div class="title">Đầu vào</div>
+              <div class="input-list small">
+                ${inputSummary || '<p class="text-muted">Không có đầu vào</p>'}
+              </div>
+            </div>
+
+            <div class="tx-details-section">
+              <div class="title">Đầu ra</div>
+              <div class="output-list small">
+                ${outputSummary || '<p class="text-muted">Không có đầu ra</p>'}
+              </div>
+            </div>
+          `);
+        }
+
+        // Gọi hàm xử lý địa chỉ để có thể click được
+        processAddressSpans();
+      }
+      function highlightTransaction(txHash) {
+        // Xóa highlight trên tất cả các giao dịch trước đó
+        $(".tx-item").removeClass("highlight");
+        $(".address-item").removeClass("highlight-address");
+        const targetItem = $(`.tx-item[data-tx-hash="${txHash}"]`);
+        if (targetItem.length) {
+          targetItem.addClass("highlight");
+
+          // Lấy dữ liệu giao dịch đã được lưu
+          const txData = JSON.parse(targetItem.attr("data-tx"));
+
+          // Chuẩn bị dữ liệu phù hợp với cấu trúc cần thiết
+          const processedTxData = {
+            hash: txData.tx_hash || txData.hash,
+            timestamp: txData.time || txData.timestamp,
+            block: txData.block_height || txData.block,
+            anomaly_score: txData.anomaly_score || txData.risk_score || 5,
+            total_value: txData.total_input || txData.total_value || 0,
+            inputs: txData.inputs || [],
+            outputs: txData.outputs || [],
+          };
+
+          // Hiển thị chi tiết giao dịch
+          displayTransactionDetails(processedTxData);
+
+          // Tải đồ thị giao dịch
+          loadGraph(txHash, true, true).catch((error) => {
+            console.error("Lỗi khi tải đồ thị giao dịch:", error);
+          });
+
+          // Cuộn đến giao dịch được chọn
+          $(".transaction-list").animate(
+            {
+              scrollTop:
+                targetItem.position().top +
+                $(".transaction-list").scrollTop() -
+                $(".transaction-list").height() / 2 +
+                targetItem.height() / 2,
+            },
+            300
+          );
+        }
+      }
+
+      function highlightAddress(address) {
+        // Xóa highlight trên tất cả các giao dịch trước đó
+        $(".tx-item").removeClass("highlight");
+        // Xóa highlighting trên tất cả các address trước đó
+        $(".address-item").removeClass("highlight-address");
+
+        // Tìm tất cả các địa chỉ trùng khớp trong danh sách
+        const addressItems = $(`.address-item[data-address="${address}"]`);
+
+        if (addressItems.length > 0) {
+          // Thêm class highlight cho các địa chỉ
+          addressItems.addClass("highlight-address");
+
+          // Scroll đến địa chỉ đầu tiên được tìm thấy
+          const firstItem = addressItems.first();
+          const txItem = firstItem.closest(".tx-item");
+
+          // Đánh dấu nhẹ giao dịch chứa địa chỉ để dễ nhìn và scroll đến đó
+          txItem.addClass("highlight");
+
+          $(".transaction-list").animate(
+            {
+              scrollTop:
+                firstItem.position().top +
+                $(".transaction-list").scrollTop() -
+                $(".transaction-list").height() / 2,
+            },
+            300
+          );
+        }
+      }
+
+      function loadTransactions(filters) {
+        showLoading(true);
+        $("#transactionList").html(
+          `<div class="text-center py-3">
+            <div class="spinner-border text-primary mb-2" role="status">
+              <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="m-0">Đang tải dữ liệu...</p>
+          </div>`
+        );
+        console.log("Gửi request với filters:", filters);
+        $.ajax({
+          url: "/api/transactions/list/",
+          method: "GET",
+          data: filters,
+          success: function (data) {
+            console.log("Nhận được dữ liệu:", data);
+            showLoading(false);
+
+            // Kiểm tra nếu data là mảng (không có transactions là property)
+            const transactions = Array.isArray(data)
+              ? data
+              : data.transactions || [];
+
+            if (transactions && transactions.length > 0) {
+              let txListHtml = "";
+              transactions.forEach((tx) => {
+                // Thay đổi để phù hợp với cấu trúc API trả về
+                const txHash = tx.tx_hash || tx.hash || "unknown";
+                const anomalyScore = tx.anomaly_score || tx.risk_score || 5; // Giá trị mặc định nếu không có
+                const anomalyClass = getAnomalyClass(anomalyScore);
+                txListHtml += `
+                  <div id="tx-${txHash}" class="tx-item" data-tx='${JSON.stringify(
+                  tx
+                ).replace(/'/g, "&#39;")}' data-tx-hash="${txHash}">
+                    <div class="tx-item-compact">
+                      <span class="tx-hash">${
+                        txHash ? txHash.substring(0, 10) : "unknown"
+                      }...</span>
+                      <span class="anomaly-pill ${anomalyClass}">${
+                  typeof anomalyScore === "number"
+                    ? anomalyScore.toFixed(1)
+                    : anomalyScore
+                }</span>
+                    </div>
+                  </div>
+                `;
+              });
+              $("#transactionList").html(txListHtml); // Hiển thị thống kê
+              const highRisk = transactions.filter(
+                (tx) => (tx.anomaly_score || tx.risk_score || 5) > 7
+              ).length;
+              const mediumRisk = transactions.filter((tx) => {
+                const score = tx.anomaly_score || tx.risk_score || 5;
+                return score >= 4 && score <= 7;
+              }).length;
+              const lowRisk = transactions.filter(
+                (tx) => (tx.anomaly_score || tx.risk_score || 5) < 4
+              ).length;
+              const totalBtc = transactions.reduce(
+                (sum, tx) => sum + (tx.total_value || tx.total_input || 0),
+                0
+              );
+              $("#highRiskCount").text(highRisk);
+              $("#mediumRiskCount").text(mediumRisk);
+              $("#lowRiskCount").text(lowRisk);
+              $("#totalBitcoin").text(
+                `${(totalBtc / 100000000).toFixed(8)} BTC`
+              );
+              $("#resultCount").text(`${transactions.length} kết quả`);
+
+              // Tải đồ thị cho giao dịch đầu tiên
+              if (transactions.length > 0) {
+                highlightTransaction(
+                  transactions[0].tx_hash || transactions[0].hash
+                );
+              }
+            } else {
+              $("#transactionList").html(
+                '<p class="text-center text-muted">Không có giao dịch nào được tìm thấy với bộ lọc đã chọn.</p>'
+              );
+              $("#txDetails").html(
+                '<p class="text-muted text-center">Không có dữ liệu giao dịch</p>'
+              );
+              $("#highRiskCount").text("0");
+              $("#mediumRiskCount").text("0");
+              $("#lowRiskCount").text("0");
+              $("#totalBitcoin").text("0 BTC");
+              $("#resultCount").text("0 kết quả");
+
+              // Xóa đồ thị
+              nodes.clear();
+              edges.clear();
+              allGraphNodes = {};
+            }
+          },
+          error: function (error) {
+            console.error("Lỗi khi tải dữ liệu:", error);
+            showLoading(false);
+            $("#transactionList").html(
+              '<p class="text-center text-danger">Có lỗi khi tải dữ liệu. Vui lòng thử lại.</p>'
+            );
+          },
+        });
+      }
+
+      // Hàm xử lý để thêm data attribute cho địa chỉ
+      function processAddressSpans() {
+        // Tìm tất cả các span là con của thẻ div.d-flex.align-items-center.w-100
+        // và nằm trước button.copy-btn
+        $(".d-flex.align-items-center.w-100").each(function () {
+          const addressSpan = $(this).find("span").first();
+          const addressValue = $(this).find(".copy-btn").attr("data-clipboard");
+          if (addressSpan.length && addressValue) {
+            // Thêm class và data attribute cho span
+            addressSpan.addClass("address-item");
+            addressSpan.attr("data-address", addressValue);
+          }
+        });
+      }
+
+      $(document).ready(function () {
+        // Khởi tạo network visualization
+        initNetwork();
+
+        // Xử lý sự kiện ẩn/hiện với icon arrow
+        $(".toggle-btn").on("click", function () {
+          const icon = $(this).find("i.bi");
+          if (icon.hasClass("bi-chevron-up")) {
+            icon.removeClass("bi-chevron-up").addClass("bi-chevron-down");
+          } else {
+            icon.removeClass("bi-chevron-down").addClass("bi-chevron-up");
+          }
+        });
+
+        // Khởi tạo datepicker
+        $(".datepicker").datepicker({
+          format: "yyyy-mm-dd",
+          language: "vi",
+          autoclose: true,
+        });
+
+        // Xử lý form submit
+        $("#txFilterForm").submit(function (e) {
+          e.preventDefault();
+          const filters = {};
+          $(this)
+            .serializeArray()
+            .forEach(function (item) {
+              if (item.value) filters[item.name] = item.value;
+            });
+          loadTransactions(filters);
+        }); // Xử lý sự kiện click vào giao dịch trong danh sách
+        $(document).on("click", ".tx-item", function () {
+          // Lấy hash từ data-tx-hash attribute
+          const txHash = $(this).data("tx-hash");
+
+          // Lấy thông tin chi tiết về giao dịch từ API
+          if (!txHash) return;
+
+          $.ajax({
+            url: `/api/transaction/${txHash}/graph/`,
+            method: "GET",
+            success: function (txData) {
+              highlightTransaction(txHash);
+            },
+            error: function () {
+              // Nếu không có dữ liệu chi tiết từ API, vẫn hiển thị những gì chúng ta có
+              highlightTransaction(txHash);
+            },
+          });
+        });
+
+        // Xử lý sự kiện click vào địa chỉ
+        $(document).on("click", ".address-item", function (e) {
+          e.stopPropagation();
+          const address = $(this).attr("data-address");
+          highlightAddress(address);
+
+          // Tải đồ thị cho địa chỉ
+          loadGraph(address, true).catch((error) => {
+            console.error("Lỗi khi tải đồ thị địa chỉ:", error);
+          });
+        });
+
+        // Xử lý sự kiện nút điều chỉnh đồ thị
+        $("#fitGraph").click(() => network.fit());
+        $("#zoomIn").click(() =>
+          network.moveTo({ scale: network.getScale() * 1.2 })
+        );
+        $("#zoomOut").click(() =>
+          network.moveTo({ scale: network.getScale() * 0.8 })
+        );
+        $("#togglePhysics").change(function () {
+          network.setOptions({ physics: { enabled: this.checked } });
+        });
+
+        // Xử lý nút mở rộng đồ thị
+        $("#expandAllButton").click(function () {
+          if (isExpanding) return;
+
+          const addressesToExpand = nodes
+            .get({
+              filter: function (node) {
+                return (
+                  !node.group.includes("transaction") &&
+                  !queriedAddresses.has(node.id)
+                );
+              },
+            })
+            .map((node) => node.id);
+
+          if (addressesToExpand.length === 0) {
+            alert("Không có địa chỉ nào để mở rộng.");
+            return;
+          }
+
+          expandSequentially(addressesToExpand);
+        });
+
+        // Xử lý sự kiện copy
+        $(document).on("click", ".copy-btn", function (e) {
+          e.stopPropagation();
+          const text = $(this).attr("data-clipboard");
+          navigator.clipboard.writeText(text);
+
+          // Hiển thị thông báo
+          const icon = $(this).find("i");
+          const originalClass = icon.attr("class");
+          icon.attr("class", "bi bi-check-lg text-success");
+
+          setTimeout(() => {
+            icon.attr("class", originalClass);
+          }, 1500);
+        });
+
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(
+          document.querySelectorAll("[title]")
+        );
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl, {
+            placement: "top",
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

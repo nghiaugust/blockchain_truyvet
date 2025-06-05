@@ -1,0 +1,194 @@
+<!-- Thanh sidebar cho các trang trực quan hóa Bitcoin -->
+<div class="sidebar-container">
+  <!-- Nút đóng/mở sidebar -->
+  <div class="sidebar-toggle" id="sidebarToggle">
+    <i class="bi bi-list"></i> Menu
+  </div>
+
+  <!-- Nội dung sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h5>Bitcoin Explorer</h5>
+      <button
+        class="btn-close text-reset"
+        id="closeSidebar"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="sidebar-body">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bitcoin:graph_view' %}">
+            <i class="bi bi-search me-2"></i>Truy vấn theo Địa chỉ
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bitcoin:tx_graph_view' %}">
+            <i class="bi bi-currency-bitcoin me-2"></i>Truy vấn theo Giao dịch
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'bitcoin:cluster_graph_view' %}">
+            <i class="bi bi-diagram-3 me-2"></i>Truy vấn theo Cluster
+          </a>
+        </li>
+        <li class="nav-item separator"></li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-info-circle me-2"></i>Giới thiệu
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-question-circle me-2"></i>Trợ giúp
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay để đóng sidebar khi click ra ngoài trên thiết bị nhỏ -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<style>
+  .sidebar-container {
+    position: relative;
+    z-index: 1030;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100%;
+    background-color: #343a40;
+    color: #fff;
+    overflow-y: auto;
+    transition: left 0.3s ease;
+    z-index: 1040;
+    box-shadow: 3px 0 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .sidebar-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #212529;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-body {
+    padding: 15px 0;
+  }
+
+  .sidebar-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background-color: #212529;
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 1030;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar-toggle:hover {
+    background-color: #0d6efd;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 1035;
+  }
+
+  .sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 10px 20px;
+    transition: all 0.2s;
+  }
+
+  .sidebar .nav-link:hover,
+  .sidebar .nav-link.active {
+    color: #fff;
+    background-color: #0d6efd;
+  }
+
+  .sidebar .separator {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 10px 15px;
+  }
+
+  /* Điều chỉnh nội dung chính khi sidebar hoạt động */
+  .main-content {
+    transition: margin-left 0.3s ease;
+  }
+
+  .main-content.active {
+    margin-left: 280px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main-content.active {
+      margin-left: 0;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById("sidebar");
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const closeSidebar = document.getElementById("closeSidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const mainContent = document.querySelector(".container-fluid");
+    function openSidebar() {
+      sidebar.classList.add("active");
+      sidebarOverlay.style.display = "block";
+
+      // Trên màn hình lớn, đẩy nội dung sang phải
+      if (window.innerWidth > 768) {
+        mainContent.classList.add("active");
+      }
+    }
+
+    function closeSidebarFunc() {
+      sidebar.classList.remove("active");
+      sidebarOverlay.style.display = "none";
+      mainContent.classList.remove("active");
+    }
+
+    sidebarToggle.addEventListener("click", openSidebar);
+    closeSidebar.addEventListener("click", closeSidebarFunc);
+    sidebarOverlay.addEventListener("click", closeSidebarFunc);
+
+    // Đánh dấu trang hiện tại
+    const currentPage = window.location.pathname;
+    const navLinks = document.querySelectorAll(".sidebar .nav-link");
+
+    // Xử lý các liên kết trong sidebar
+    navLinks.forEach((link) => {
+      // Đánh dấu liên kết hiện tại
+      if (link.getAttribute("href") === currentPage) {
+        link.classList.add("active");
+      } // Chỉ đánh dấu link active, không thêm hành vi click nào cả
+      // Để các liên kết hoạt động theo mặc định của trình duyệt
+    });
+  });
+</script>

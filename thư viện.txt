@@ -1,0 +1,17 @@
+pip install django
+
+django-admin startproject blockchain
+cd blockchain
+python manage.py startapp bitcoin
+
+python manage.py runserver
+
+database
+python manage.py makemigrations
+python manage.py migrate
+
+cd blockchain_truyvet
+python blockchain\manage.py import_block_data block_898421.json
+
+heuristic
+python manage.py heuristics --chunk-size 1000

@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trình trực quan Đồ thị Địa chỉ Bitcoin</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/dist/vis-network.min.js"></script>
+
+    <style>
+      /* ... (Giữ nguyên CSS như trong tx_graph.html) ... */
+      body {
+        background-color: #f8f9fa;
+      }
+      #mynetwork {
+        width: 100%;
+        height: 75vh;
+        border: 1px solid lightgray;
+        background-color: #ffffff;
+      }
+      .transaction-list {
+        height: 75vh;
+        overflow-y: auto;
+        font-size: 0.8rem;
+      }
+      .loading-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+      }
+      .tx-item {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      .tx-item:hover {
+        background-color: #e9ecef;
+      }
+      .tx-item.highlight {
+        background-color: #d1ecf1;
+        border-left: 5px solid #0c5460;
+      }
+      .address-item.highlight-address {
+        background-color: #ffeeba;
+        border-left: 3px solid #856404;
+        padding-left: 3px;
+        font-weight: bold;
+      }
+      #legend {
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-top: 1px solid lightgray;
+      }
+      #legend span {
+        margin-right: 15px;
+      }
+      #legend i {
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+
+      /* Thêm CSS cho nút ẩn/hiện thống kê */
+      .card-header .toggle-btn {
+        cursor: pointer;
+        transition: transform 0.3s;
+      }
+
+      .card-header .toggle-btn.collapsed {
+        transform: rotate(180deg);
+      }
+
+      /* CSS để thêm hiệu ứng chuyển động mượt mà khi ẩn/hiện */
+      .collapsible-content {
+        transition: max-height 0.3s ease-out;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    {% include "bitcoin/sidebar.html" %}
+    <div class="container-fluid mt-3">
+      <h1 class="text-center mb-4">Trình trực quan Đồ thị Địa chỉ Bitcoin</h1>
+      <div class="row mb-3">
+        <div class="col-md-6 offset-md-3">
+          <form id="addressForm" class="input-group">
+            <input
+              type="text"
+              class="form-control"
+              id="addressInput"
+              placeholder="Nhập địa chỉ Bitcoin"
+              required
+            />
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-search"></i> Tải Đồ thị Địa chỉ
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="card shadow-sm">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              Trực quan hóa Đồ thị
+              <div>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  id="fitGraph"
+                  title="Căn chỉnh đồ thị"
+                >
+                  <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  id="zoomIn"
+                  title="Phóng to"
+                >
+                  <i class="bi bi-zoom-in"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  id="zoomOut"
+                  title="Thu nhỏ"
+                >
+                  <i class="bi bi-zoom-out"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  id="expandAllButton"
+                  title="Mở rộng tất cả node con chưa truy vấn"
+                >
+                  <i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc
+                </button>
+                <div class="form-check form-switch d-inline-block ms-2">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="togglePhysics"
+                    title="Bật/Tắt vật lý"
+                    checked
+                  />
+                  <label class="form-check-label" for="togglePhysics"
+                    >Vật lý</label
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-0 position-relative">
+              <div id="mynetwork"></div>
+              <div
+                class="spinner-border text-primary loading-spinner"
+                role="status"
+                id="loadingSpinner"
+                style="display: none"
+              >
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+            </div>
+            <div id="legend" class="card-footer text-muted small">
+              <strong>Chú thích:</strong>
+              <div class="d-flex flex-wrap mt-1">
+                <span class="ms-3 me-2"
+                  ><i class="bi bi-star-fill text-danger"></i> Địa chỉ Trung
+                  tâm</span
+                >
+                <span class="me-2"
+                  ><i class="bi bi-circle-fill text-warning"></i> Địa chỉ Đã
+                  Truy vấn</span
+                >
+                <span class="me-2"
+                  ><i class="bi bi-circle-fill text-primary"></i> Địa chỉ Thông
+                  thường</span
+                >
+                <span class="me-2"
+                  ><i
+                    class="bi bi-circle-fill text-purple"
+                    style="color: #800080"
+                  ></i>
+                  Địa chỉ Clustered</span
+                >
+                <span class="me-2"
+                  ><i class="bi bi-circle-fill text-danger"></i> Địa chỉ High
+                  Reuse</span
+                >
+                <span class="me-2"
+                  ><i
+                    class="bi bi-circle-fill text-orange"
+                    style="color: #ffa500"
+                  ></i>
+                  Địa chỉ Reuse</span
+                >
+              </div>
+              <div class="d-flex mt-1">
+                <span class="ms-3 me-2"
+                  ><i class="bi bi-square-fill text-success"></i> Giao dịch
+                  Thường</span
+                >
+                <span class="me-2"
+                  ><i class="bi bi-square-fill" style="color: #ff0000"></i> Giao
+                  dịch Bất thường (10/10)</span
+                >
+                <span class="me-2"
+                  ><i class="bi bi-square-fill" style="color: #887700"></i> Giao
+                  dịch Trung bình (5/10)</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card shadow-sm mb-3">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <span>Thống kê</span>
+              <button
+                class="btn btn-sm btn-link toggle-btn"
+                data-bs-toggle="collapse"
+                data-bs-target="#statsCollapse"
+                aria-expanded="true"
+              >
+                <i class="bi bi-chevron-up"></i>
+              </button>
+            </div>
+            <div id="statsCollapse" class="collapse show">
+              <div class="card-body">
+                <p>
+                  <strong>Địa chỉ Ban đầu:</strong>
+                  <span id="centerObject">-</span>
+                </p>
+                <p>
+                  <strong>Số Giao dịch Hiển thị:</strong>
+                  <span id="txCount">-</span>
+                </p>
+                <p>
+                  <strong>Số Địa chỉ Hiển thị:</strong>
+                  <span id="uniqueAddr">-</span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="card shadow-sm">
+            <div class="card-header">Danh sách Giao dịch</div>
+            <div class="card-body p-0">
+              <ul
+                class="list-group list-group-flush transaction-list"
+                id="transactionList"
+              >
+                <li class="list-group-item text-muted">Nhập Địa chỉ để xem.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script type="text/javascript">
+      let network = null;
+      let nodes = new vis.DataSet([]);
+      let edges = new vis.DataSet([]);
+      let queriedAddresses = new Set();
+      let allGraphNodes = {};
+      let centerNodeId = null;
+      let isExpanding = false;
+
+      // THAY ĐỔI: Cấu hình Vis.js (Không cần center_transaction)
+      const options = {
+        nodes: {
+          shape: "dot",
+          size: 16,
+          font: { size: 12, color: "#343a40" },
+          borderWidth: 2,
+        },
+        edges: {
+          width: 2,
+          font: {
+            size: 11,
+            align: "middle",
+            strokeWidth: 3,
+            strokeColor: "#ffffff",
+          },
+          color: { inherit: "from", highlight: "#ff0000", hover: "#d3d3d3" },
+          smooth: {
+            type: "cubicBezier",
+            forceDirection: "horizontal",
+            roundness: 0.4,
+          },
+          arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+        },
+        physics: {
+          enabled: true,
+          solver: "barnesHut",
+          barnesHut: {
+            gravitationalConstant: -10000,
+            centralGravity: 0.3,
+            springLength: 120,
+            springConstant: 0.04,
+            damping: 0.09,
+            avoidOverlap: 0.2,
+          },
+          stabilization: { iterations: 150 },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200,
+          navigationButtons: false,
+          keyboard: true,
+        },
+        groups: {
+          center_address: {
+            color: { background: "#dc3545", border: "#bd2130" },
+            shape: "star",
+            size: 20,
+          },
+          queried_address: {
+            color: { background: "#ffc107", border: "#e0a800" },
+            shape: "dot",
+            size: 20,
+          },
+          address: {
+            color: { background: "#0d6efd", border: "#0b5ed7" },
+            shape: "dot",
+            size: 20,
+          },
+          transaction: {
+            color: { background: "#198754", border: "#157347" },
+            shape: "square",
+            size: 12,
+          },
+          anomaly_transaction: {
+            // Giao dịch BẤT THƯỜNG
+            color: { background: "#dc3545", border: "#bd2130" }, // Đỏ
+            shape: "square", // Vẫn là hình vuông
+            size: 15, // Có thể cho lớn hơn một chút
+            borderWidth: 3,
+          },
+        },
+      };
+
+      function initNetwork() {
+        /* ... Giữ nguyên ... */
+        const container = document.getElementById("mynetwork");
+        const data = { nodes: nodes, edges: edges };
+        network = new vis.Network(container, data, options);
+
+        network.on("click", function (params) {
+          if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const nodeData = allGraphNodes[nodeId]; // Lấy dữ liệu gốc
+
+            // Hiển thị tags khi click (ví dụ: alert hoặc sidebar)
+            if (nodeData && nodeData.tags && nodeData.tags.length > 0) {
+              alert(
+                `Node: ${
+                  nodeData.id
+                }\nLoại bất thường (Tags): ${nodeData.tags.join(", ")}`
+              );
+            } // Logic mở rộng node (như cũ)
+            if (
+              nodeData &&
+              !nodeData.group.includes("transaction") &&
+              !queriedAddresses.has(nodeData.id)
+            ) {
+              loadGraph(nodeData.id, false); // Tải địa chỉ, không xóa
+            }
+
+            // Xử lý theo loại node để highlight phù hợp
+            if (nodeData && nodeData.group.includes("transaction")) {
+              // Nếu là giao dịch, thì highlight giao dịch đó
+              highlightTransaction(nodeData.id);
+            } else if (nodeData && !nodeData.group.includes("transaction")) {
+              // Nếu là địa chỉ, highlight địa chỉ đó trong danh sách
+              highlightAddress(nodeData.id);
+            }
+          }
+        });
+
+        network.on("doubleClick", function (params) {
+          /* ... Giữ nguyên ... */
+        });
+      }
+      function highlightTransaction(txHash) {
+        // Xóa highlight trên tất cả các địa chỉ trước đó
+        $(".address-item").removeClass("highlight-address");
+
+        // Xóa highlight trên tất cả các giao dịch trước đó
+        $(".tx-item").removeClass("highlight");
+
+        const targetItem = $(`#tx-${txHash}`);
+        if (targetItem.length) {
+          targetItem.addClass("highlight");
+          $(".transaction-list").animate(
+            {
+              scrollTop:
+                targetItem.offset().top -
+                $(".transaction-list").offset().top +
+                $(".transaction-list").scrollTop() -
+                50,
+            },
+            300
+          );
+        }
+      }
+
+      function highlightAddress(address) {
+        // Xóa highlight trên tất cả các giao dịch trước đó
+        $(".tx-item").removeClass("highlight");
+
+        // Xóa highlighting trên tất cả các address trước đó
+        $(".address-item").removeClass("highlight-address");
+
+        // Tìm tất cả các địa chỉ trùng khớp trong danh sách
+        const addressItems = $(`.address-item[data-address="${address}"]`);
+
+        if (addressItems.length > 0) {
+          // Thêm class highlight cho các địa chỉ
+          addressItems.addClass("highlight-address");
+
+          // Scroll đến địa chỉ đầu tiên được tìm thấy
+          const firstItem = addressItems.first();
+          const txItem = firstItem.closest(".tx-item");
+
+          // Đánh dấu nhẹ giao dịch chứa địa chỉ để dễ nhìn và scroll đến đó
+          txItem.addClass("highlight");
+
+          $(".transaction-list").animate(
+            {
+              scrollTop:
+                txItem.offset().top -
+                $(".transaction-list").offset().top +
+                $(".transaction-list").scrollTop() -
+                50,
+            },
+            300
+          );
+        }
+      }
+      function showLoading(show) {
+        /* ... Giữ nguyên ... */
+      }
+
+      // THAY ĐỔI: Hàm loadGraph giờ chỉ gọi API địa chỉ
+      function loadGraph(address, clearGraph) {
+        // Bỏ isTxHash
+        return new Promise((resolve, reject) => {
+          if (!clearGraph && queriedAddresses.has(address)) {
+            console.log(`Address ${address} already queried. Skipping.`);
+            network.focus(address, { scale: 1.5, animation: true });
+            resolve({ status: "skipped" });
+            return;
+          }
+
+          showLoading(true);
+          const url = `/api/address/${address}/transactions/`; // Luôn gọi API địa chỉ
+
+          queriedAddresses.add(address);
+
+          if (clearGraph) {
+            nodes.clear();
+            edges.clear();
+            allGraphNodes = {};
+            queriedAddresses.clear();
+            queriedAddresses.add(address);
+            $("#transactionList")
+              .empty()
+              .append(
+                '<li class="list-group-item text-muted">Đang tải...</li>'
+              );
+            centerNodeId = address;
+            $("#centerObject").text(centerNodeId.substring(0, 15) + "...");
+          }
+
+          $.ajax({
+            url: url,
+            method: "GET",
+            success: function (data) {
+              if (data.error) {
+                showLoading(false);
+                reject(new Error(data.error));
+                return;
+              }
+
+              if (clearGraph) {
+                $("#transactionList").empty();
+              }
+
+              const newNodes = [];
+              data.nodes.forEach((node) => {
+                if (!nodes.get(node.id)) {
+                  let nodeVisuals = {
+                    id: node.id,
+                    label: node.label,
+                    // Bỏ gán group ở đây, sẽ gán sau
+                    title: node.title, // title đã có tags từ view
+                  };
+
+                  const tags = node.tags || [];
+                  const score = node.score || 0;
+
+                  // --- GÁN GROUP VÀ STYLE ---
+                  if (node.group === "center_transaction") {
+                    nodeVisuals.group = "center_transaction";
+                  } else if (node.group.includes("address")) {
+                    if (node.id === centerNodeId) {
+                      nodeVisuals.group = "center_address";
+                    } else if (queriedAddresses.has(node.id)) {
+                      nodeVisuals.group = "queried_address"; // Hình tròn vàng
+                    } else {
+                      nodeVisuals.group = "address"; // Hình tròn xanh mặc định
+                    }
+
+                    // Sử dụng màu từ API nếu có
+                    if (node.color) {
+                      nodeVisuals.color = {
+                        background: node.color,
+                        border: node.color,
+                        highlight: {
+                          background: node.color,
+                          border: "#000000",
+                        },
+                      };
+                    }
+
+                    // Thêm nhãn dựa trên tag nếu có
+                    if (node.title && node.title.includes("clustered")) {
+                      nodeVisuals.label = nodeVisuals.label + " [C]";
+                    } else if (
+                      node.title &&
+                      node.title.includes("high_reuse")
+                    ) {
+                      nodeVisuals.label = nodeVisuals.label + " [HR]";
+                    } else if (node.title && node.title.includes("reuse")) {
+                      nodeVisuals.label = nodeVisuals.label + " [R]";
+                    }
+                  } else {
+                    // Xử lý giao dịch - sử dụng màu từ API dựa trên anomaly_score
+                    if (node.color) {
+                      nodeVisuals.color = {
+                        background: node.color,
+                        border: node.color,
+                        highlight: {
+                          background: node.color,
+                          border: "#000000",
+                        },
+                      };
+
+                      // Nếu màu đậm (gần đỏ), coi là bất thường
+                      if (
+                        node.color.startsWith("#FF") ||
+                        node.color.startsWith("#D")
+                      ) {
+                        nodeVisuals.group = "anomaly_transaction";
+                      } else {
+                        nodeVisuals.group = "transaction";
+                      }
+                    } else {
+                      nodeVisuals.group = "transaction"; // Mặc định nếu không có thông tin màu
+                      nodeVisuals.title = `${node.title}\nBất thường: Không`;
+                    }
+                  }
+                  // --- KẾT THÚC GÁN GROUP ---
+
+                  newNodes.push(nodeVisuals);
+                  allGraphNodes[node.id] = node;
+                } else {
+                  // Cập nhật group cho node đã tồn tại nếu cần
+                  const existingNode = nodes.get(node.id);
+                  if (
+                    queriedAddresses.has(node.id) &&
+                    existingNode.group === "address"
+                  ) {
+                    nodes.update({ id: node.id, group: "queried_address" });
+                  }
+                }
+              });
+              nodes.add(newNodes);
+
+              const newEdges = [];
+              data.edges.forEach((edge) => {
+                const edgeId = `${edge.from}-${edge.to}-${edge.label.replace(
+                  /[\s.]/g,
+                  ""
+                )}`;
+                if (!edges.get(edgeId)) {
+                  edge.id = edgeId;
+                  newEdges.push(edge);
+                }
+              });
+              edges.add(newEdges);
+
+              data.transactions.forEach((tx) => {
+                if ($(`#tx-${tx.tx_hash}`).length === 0) {
+                  const inputSummary = tx.inputs
+                    .map(
+                      (i) =>
+                        `<li class="d-flex align-items-center flex-wrap">
+                          <div class="d-flex align-items-center w-100">
+                            <span>${i.address.substring(0, 8)}...</span>
+                            <button class="btn btn-sm btn-link py-0 px-1 copy-btn" 
+                              data-clipboard-text="${
+                                i.address
+                              }" title="Copy address">
+                              <i class="bi bi-clipboard-fill" style="font-size: 0.7rem;"></i>
+                            </button>
+                            <span>(${(i.value / 100000000).toFixed(
+                              4
+                            )} BTC)</span>
+                          </div>                          ${
+                            i.tags && i.tags !== "None"
+                              ? `<div class="w-100 ms-2 small">
+                              ${
+                                i.tags.includes("clustered")
+                                  ? `<span class="badge" style="background-color: #800080;">${i.tags}</span>`
+                                  : i.tags.includes("high_reuse")
+                                  ? `<span class="badge bg-danger">${i.tags}</span>`
+                                  : i.tags.includes("reuse")
+                                  ? `<span class="badge" style="background-color: #FFA500;">${i.tags}</span>`
+                                  : `<span class="badge bg-secondary">${i.tags}</span>`
+                              }
+                            </div>`
+                              : ""
+                          }
+                        </li>`
+                    )
+                    .join("");
+                  const outputSummary = tx.outputs
+                    .map(
+                      (o) =>
+                        `<li class="d-flex align-items-center flex-wrap">
+                          <div class="d-flex align-items-center w-100">
+                            <span>${o.address.substring(0, 8)}...</span>
+                            <button class="btn btn-sm btn-link py-0 px-1 copy-btn"
+                              data-clipboard-text="${
+                                o.address
+                              }" title="Copy address">
+                              <i class="bi bi-clipboard-fill" style="font-size: 0.7rem;"></i>
+                            </button>
+                            <span>(${(o.value / 100000000).toFixed(
+                              4
+                            )} BTC)</span>
+                          </div>                          ${
+                            o.tags && o.tags !== "None"
+                              ? `<div class="w-100 ms-2 small">
+                              ${
+                                o.tags.includes("clustered")
+                                  ? `<span class="badge" style="background-color: #800080;">${o.tags}</span>`
+                                  : o.tags.includes("high_reuse")
+                                  ? `<span class="badge bg-danger">${o.tags}</span>`
+                                  : o.tags.includes("reuse")
+                                  ? `<span class="badge" style="background-color: #FFA500;">${o.tags}</span>`
+                                  : `<span class="badge bg-secondary">${o.tags}</span>`
+                              }
+                            </div>`
+                              : ""
+                          }
+                        </li>`
+                    )
+                    .join("");
+                  $("#transactionList").append(`
+                                  <li class="list-group-item tx-item" id="tx-${
+                                    tx.tx_hash
+                                  }" data-tx-hash="${tx.tx_hash}">
+                                      <div class="fw-bold d-flex align-items-center">
+                                        <span>${tx.tx_hash.substring(
+                                          0,
+                                          15
+                                        )}...</span>
+                                        <button class="btn btn-sm btn-link ms-2 copy-btn" 
+                                          data-clipboard-text="${
+                                            tx.tx_hash
+                                          }" title="Copy transaction hash">
+                                          <i class="bi bi-clipboard"></i>
+                                        </button>
+                                      </div>                                      <div class="text-muted small">${
+                                        tx.time
+                                      }</div>                                      <div class="d-flex justify-content-between mt-1">
+                                        <div><strong>Phí:</strong> ${
+                                          tx.fee
+                                        } sats</div>
+                                        <div>
+                                          <strong>Điểm bất thường:</strong> 
+                                          <span class="${
+                                            tx.anomaly_score > 7
+                                              ? "text-danger fw-bold"
+                                              : tx.anomaly_score > 4
+                                              ? "text-warning fw-bold"
+                                              : "text-success"
+                                          }">${tx.anomaly_score.toFixed(
+                    1
+                  )}/10</span>
+                                        </div>
+                                      </div><div class="mt-1">
+                                        <strong>Tags Giao dịch:</strong> 
+                                        ${
+                                          tx.tags && tx.tags !== "None"
+                                            ? `<span class="badge ${
+                                                tx.anomaly_score > 7
+                                                  ? "bg-danger"
+                                                  : tx.anomaly_score > 4
+                                                  ? "bg-warning"
+                                                  : "bg-info"
+                                              }">${tx.tags}</span>`
+                                            : `<span class="badge bg-secondary">None</span>`
+                                        }
+                                      </div>
+                                      <div class="row mt-1">
+                                          <div class="col"><strong>Đầu vào:</strong><ul>${
+                                            inputSummary ||
+                                            "<li>Coinbase/Unknown</li>"
+                                          }</ul></div>
+                                          <div class="col"><strong>Đầu ra:</strong><ul>${outputSummary}</ul></div>
+                                      </div>
+                                  </li>
+                              `);
+                }
+              });
+
+              $("#txCount").text($(".tx-item").length);
+              $("#uniqueAddr").text(
+                nodes.get({ filter: (n) => n.group !== "transaction" }).length
+              );
+
+              if (clearGraph) {
+                network.fit();
+              }
+              showLoading(false);
+              resolve({ status: "loaded", data: data });
+            },
+            error: function (xhr) {
+              showLoading(false);
+              queriedAddresses.delete(address);
+              reject(xhr);
+            },
+          });
+        });
+      }
+
+      async function expandSequentially(addressesToExpand) {
+        isExpanding = true;
+        const button = $("#expandAllButton");
+        button
+          .prop("disabled", true)
+          .html(
+            '<span class="spinner-border spinner-border-sm"></span> Đang mở rộng...'
+          );
+
+        for (const address of addressesToExpand) {
+          if (!queriedAddresses.has(address)) {
+            console.log(`Expanding address: ${address}`);
+            try {
+              await loadGraph(address, false); // Gọi không cần isTxHash
+              await new Promise((resolve) => setTimeout(resolve, 300));
+            } catch (error) {
+              console.error(`Failed to expand ${address}:`, error);
+            }
+          }
+        }
+
+        isExpanding = false;
+        button
+          .prop("disabled", false)
+          .html('<i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc');
+        console.log("Expansion complete.");
+      }
+      $(document).ready(function () {
+        initNetwork();
+
+        // Xử lý sự kiện ẩn/hiện với icon arrow
+        $(".toggle-btn").on("click", function () {
+          const icon = $(this).find("i.bi");
+          if (icon.hasClass("bi-chevron-up")) {
+            icon.removeClass("bi-chevron-up").addClass("bi-chevron-down");
+          } else {
+            icon.removeClass("bi-chevron-down").addClass("bi-chevron-up");
+          }
+        });
+
+        // THAY ĐỔI: Xử lý form submit Địa chỉ
+        $("#addressForm").submit(function (e) {
+          e.preventDefault();
+          const address = $("#addressInput").val().trim();
+          if (address) {
+            loadGraph(address, true); // Gọi không cần isTxHash
+          }
+        });
+
+        // Giữ nguyên sự kiện nút Mở rộng
+        $("#expandAllButton").click(function () {
+          if (isExpanding) return;
+
+          const currentNodes = nodes.get({
+            filter: function (item) {
+              return item.group === "address" && !queriedAddresses.has(item.id);
+            },
+          });
+
+          const addressesToExpand = currentNodes.map((node) => node.id);
+
+          if (addressesToExpand.length === 0) {
+            alert("Không còn node địa chỉ (màu xanh) nào để mở rộng!");
+            return;
+          }
+
+          const nodesToUpdate = addressesToExpand.map((id) => ({
+            id: id,
+            group: "queried_address",
+          }));
+          nodes.update(nodesToUpdate);
+
+          expandSequentially(addressesToExpand);
+        });
+
+        // Giữ nguyên các nút Fit, Zoom, Physics và sự kiện hover
+        $("#fitGraph").click(() => network.fit());
+        $("#zoomIn").click(() =>
+          network.moveTo({ scale: network.getScale() * 1.2 })
+        );
+        $("#zoomOut").click(() =>
+          network.moveTo({ scale: network.getScale() * 0.8 })
+        );
+        $("#togglePhysics").change(function () {
+          network.setOptions({ physics: { enabled: this.checked } });
+        }); // Hàm xử lý để thêm class và data attribute cho tất cả spans chứa địa chỉ
+        function processAddressSpans() {
+          // Tìm tất cả spans địa chỉ trong danh sách inputs và outputs
+          $(".transaction-list li ul li span").each(function () {
+            const text = $(this).text();
+            // Nếu span có text dạng "abc...xyz"
+            if (text.includes("...")) {
+              const address = $(this)
+                .siblings(".copy-btn")
+                .data("clipboard-text");
+              if (address) {
+                // Thêm class và data attribute
+                $(this)
+                  .addClass("address-item")
+                  .data("address", address)
+                  .attr("data-address", address);
+                $(this).css("cursor", "pointer");
+              }
+            }
+          });
+        }
+
+        $(document)
+          .on("mouseenter", ".tx-item", function () {
+            const txHash = $(this).data("tx-hash");
+            if (txHash) network.selectNodes([txHash]);
+          })
+          .on("mouseleave", ".tx-item", function () {
+            network.selectNodes([]);
+          })
+          // Thêm sự kiện click cho giao dịch trong danh sách
+          .on("click", ".tx-item", function () {
+            const txHash = $(this).data("tx-hash");
+            if (txHash) {
+              network.selectNodes([txHash]);
+              highlightTransaction(txHash);
+            }
+          })
+          // Thêm sự kiện cho việc click vào địa chỉ trong danh sách giao dịch
+          .on("click", ".address-item", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const address = $(this).data("address");
+            if (address) {
+              network.selectNodes([address]);
+              highlightAddress(address);
+            }
+          })
+          .on("click", ".copy-btn", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const textToCopy = $(this).data("clipboard-text");
+            const originalIcon = $(this).find("i").attr("class");
+
+            // Create a temporary input element
+            const tempInput = document.createElement("input");
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+
+            // Select and copy text
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            // Show success feedback
+            $(this)
+              .find("i")
+              .removeClass()
+              .addClass("bi bi-check-lg text-success");
+
+            // Reset icon after delay
+            setTimeout(() => {
+              $(this).find("i").removeClass().addClass(originalIcon);
+            }, 1500);
+          }); // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(
+          document.querySelectorAll("[title]")
+        );
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: "hover",
+            placement: "top",
+          });
+        });
+
+        // Override $.ajax để tự động xử lý các địa chỉ sau mỗi lần tải dữ liệu
+        const originalAjaxSuccess = $.ajax;
+        $.ajax = function () {
+          const originalSuccess = arguments[0].success;
+          if (originalSuccess) {
+            arguments[0].success = function () {
+              const result = originalSuccess.apply(this, arguments);
+              // Chờ một chút để DOM được cập nhật
+              setTimeout(processAddressSpans, 100);
+              return result;
+            };
+          }
+          return originalAjaxSuccess.apply(this, arguments);
+        };
+      });
+    </script>
+  </body>
+</html>
