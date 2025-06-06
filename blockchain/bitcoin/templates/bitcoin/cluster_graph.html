@@ -120,6 +120,7 @@
   </head>
   <body>
     {% include "bitcoin/sidebar.html" %}
+    {% include "bitcoin/modal_cluster.html" %}
     <div class="container-fluid mt-3">
       <h1 class="text-center mb-4">Trình trực quan Đồ thị Cluster Bitcoin</h1>
       <div class="row mb-3">
@@ -174,6 +175,15 @@
                   title="Mở rộng tất cả node con chưa truy vấn"
                 >
                   <i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc
+                </button>
+                <!-- Thêm nút mở modal cluster -->
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  data-bs-toggle="modal"
+                  data-bs-target="#clusterModal"
+                  title="Chọn cluster từ danh sách"
+                >
+                  <i class="bi bi-list"></i> Danh sách Cụm
                 </button>
                 <div class="form-check form-switch d-inline-block ms-2">
                   <input

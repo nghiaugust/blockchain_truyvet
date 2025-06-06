@@ -89,7 +89,9 @@
     </style>
   </head>
   <body>
-    {% include "bitcoin/sidebar.html" %}
+    {% include "bitcoin/sidebar.html" %} 
+    {% include "bitcoin/modal_tx.html" %}
+
     <div class="container-fluid mt-3">
       <h1 class="text-center mb-4">Trình trực quan Đồ thị Giao dịch Bitcoin</h1>
 
@@ -145,6 +147,15 @@
                   title="Mở rộng tất cả node con chưa truy vấn"
                 >
                   <i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc
+                </button>
+                <!-- Thêm nút mở modal giao dịch -->
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  data-bs-toggle="modal"
+                  data-bs-target="#transactionModal"
+                  title="Chọn giao dịch từ danh sách"
+                >
+                  <i class="bi bi-list"></i> Danh sách Giao dịch
                 </button>
                 <div class="form-check form-switch d-inline-block ms-2">
                   <input
@@ -812,6 +823,9 @@
             icon.removeClass("bi-chevron-down").addClass("bi-chevron-up");
           }
         });
+
+        // Thêm hàm global để modal có thể gọi
+        window.loadGraph = loadGraph;
 
         $("#txForm").submit(function (e) {
           e.preventDefault();

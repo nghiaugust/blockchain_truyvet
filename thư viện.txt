@@ -1,17 +1,21 @@
 pip install django
+pip install django-sslserver
+pip install requests
 
 django-admin startproject blockchain
 cd blockchain
 python manage.py startapp bitcoin
-
-python manage.py runserver
-
-database
-python manage.py makemigrations
-python manage.py migrate
+python manage.py startapp import_data
 
 cd blockchain_truyvet
-python blockchain\manage.py import_block_data block_898421.json
 
-heuristic
+# Import từ file JSON
+python blockchain\manage.py import_block_data data/block_898421.json
+
+# Import trực tiếp từ web interface
+# Truy cập: http://localhost:8000/import_data/
+
+heuristics
 python manage.py heuristics --chunk-size 1000
+
+python manage.py runsslserver
