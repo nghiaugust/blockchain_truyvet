@@ -19,3 +19,4 @@ heuristics
 python manage.py heuristics --chunk-size 1000
 
 python manage.py runsslserver
+demo
