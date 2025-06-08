@@ -1,0 +1,399 @@
+<div
+  class="modal fade"
+  id="transactionModal"
+  tabindex="-1"
+  aria-labelledby="transactionModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="transactionModalLabel">
+          <i class="bi bi-list-ul me-2"></i>Danh sách Giao dịch
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <!-- Bộ lọc -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="limitSelect" class="form-label">Số lượng:</label>
+            <select class="form-select form-select-sm" id="limitSelect">
+              <option value="10">10 giao dịch</option>
+              <option value="20" selected>20 giao dịch</option>
+              <option value="50">50 giao dịch</option>
+              <option value="100">100 giao dịch</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="sortSelect" class="form-label">Sắp xếp:</label>
+            <select class="form-select form-select-sm" id="sortSelect">
+              <option value="time_desc" selected>Thời gian (Mới nhất)</option>
+              <option value="time_asc">Thời gian (Cũ nhất)</option>
+              <option value="anomaly_desc">Điểm bất thường (Cao nhất)</option>
+              <option value="fee_desc">Phí (Cao nhất)</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="refreshBtn" class="form-label">&nbsp;</label>
+            <button
+              class="btn btn-outline-primary btn-sm d-block"
+              id="refreshBtn"
+            >
+              <i class="bi bi-arrow-clockwise"></i> Làm mới
+            </button>
+          </div>
+        </div>
+
+        <!-- Danh sách giao dịch -->
+        <div
+          class="transaction-list-container"
+          style="max-height: 400px; overflow-y: auto"
+        >
+          <div id="transactionListModal" class="list-group">
+            <!-- Nội dung sẽ được load bằng JavaScript -->
+            <div class="text-center p-3">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phân trang -->
+        <nav aria-label="Transaction pagination" class="mt-3">
+          <ul
+            class="pagination pagination-sm justify-content-center"
+            id="transactionPagination"
+          >
+            <!-- Pagination sẽ được tạo bằng JavaScript -->
+          </ul>
+        </nav>
+
+        <!-- Thống kê -->
+        <div class="row mt-3 text-center">
+          <div class="col-4">
+            <small class="text-muted">Tổng:</small>
+            <div class="fw-bold" id="totalTransactions">-</div>
+          </div>
+          <div class="col-4">
+            <small class="text-muted">Trang:</small>
+            <div class="fw-bold" id="currentPageInfo">-</div>
+          </div>
+          <div class="col-4">
+            <small class="text-muted">Bất thường:</small>
+            <div class="fw-bold text-danger" id="anomalyCount">-</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .transaction-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .transaction-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .transaction-hash {
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+  }
+
+  .copy-btn-modal {
+    padding: 0.1rem 0.3rem;
+    font-size: 0.7rem;
+  }
+
+  .anomaly-badge {
+    font-size: 0.7rem;
+  }
+
+  .transaction-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+
+  .fee-info {
+    font-size: 0.8rem;
+    color: #495057;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let currentPage = 1;
+    let totalPages = 1;
+    let isLoading = false;
+
+    const modal = document.getElementById("transactionModal");
+    const transactionList = document.getElementById("transactionListModal");
+    const pagination = document.getElementById("transactionPagination");
+    const limitSelect = document.getElementById("limitSelect");
+    const sortSelect = document.getElementById("sortSelect");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const totalTransactionsEl = document.getElementById("totalTransactions");
+    const currentPageInfoEl = document.getElementById("currentPageInfo");
+    const anomalyCountEl = document.getElementById("anomalyCount");
+
+    // Load dữ liệu khi mở modal
+    modal.addEventListener("shown.bs.modal", function () {
+      loadTransactions(1);
+    });
+
+    // Event listeners
+    limitSelect.addEventListener("change", () => loadTransactions(1));
+    sortSelect.addEventListener("change", () => loadTransactions(1));
+    refreshBtn.addEventListener("click", () => loadTransactions(currentPage));
+
+    function loadTransactions(page = 1) {
+      if (isLoading) return;
+
+      isLoading = true;
+      currentPage = page;
+
+      // Show loading
+      transactionList.innerHTML = `
+      <div class="text-center p-3">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang tải...</span>
+        </div>
+      </div>
+      `;
+
+      const limit = limitSelect.value;
+      const sort = sortSelect.value;
+      const offset = (page - 1) * limit;
+
+      fetch(
+        `/api/transactions/modal/?limit=${limit}&offset=${offset}&sort=${sort}`
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          renderTransactions(data.transactions);
+          renderPagination(data.total, data.page, data.total_pages);
+          updateStats(data.total, data.anomaly_count);
+
+          isLoading = false;
+        })
+        .catch((error) => {
+          console.error("Error loading transactions:", error);
+          transactionList.innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> 
+            Lỗi khi tải dữ liệu: ${error.message}
+          </div>
+        `;
+          isLoading = false;
+        });
+    }
+
+    function renderTransactions(transactions) {
+      if (!transactions || transactions.length === 0) {
+        transactionList.innerHTML = `
+        <div class="text-center p-3 text-muted">
+          <i class="bi bi-inbox"></i><br>
+          Không có giao dịch nào
+        </div>
+        `;
+        return;
+      }
+
+      transactionList.innerHTML = transactions
+        .map(
+          (tx) => `
+      <div class="list-group-item transaction-item" data-tx-hash="${
+        tx.tx_hash
+      }">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-1">
+              <span class="transaction-hash me-2">${tx.tx_hash.substring(
+                0,
+                16
+              )}...</span>
+              <button class="btn btn-outline-secondary copy-btn-modal" 
+                      data-clipboard-text="${tx.tx_hash}" 
+                      title="Copy hash">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="transaction-time">
+              <i class="bi bi-clock"></i> ${tx.time}
+              ${
+                tx.block_height
+                  ? `<span class="ms-2"><i class="bi bi-box"></i> Block ${tx.block_height}</span>`
+                  : ""
+              }
+            </div>
+          </div>
+          <div class="text-end">
+            <div class="anomaly-badge">
+              <span class="badge ${getAnomalyBadgeClass(tx.anomaly_score)}">
+                ${tx.anomaly_score.toFixed(1)}/10
+              </span>
+            </div>
+            <div class="fee-info mt-1">
+              <i class="bi bi-currency-bitcoin"></i> ${(
+                tx.fee / 100000000
+              ).toFixed(8)} BTC
+            </div>
+          </div>
+        </div>
+        
+        <div class="row mt-2 small">
+          <div class="col-6">
+            <span class="text-muted">Input:</span> ${(
+              tx.total_input / 100000000
+            ).toFixed(4)} BTC
+          </div>
+          <div class="col-6">
+            <span class="text-muted">Output:</span> ${(
+              tx.total_output / 100000000
+            ).toFixed(4)} BTC
+          </div>
+        </div>
+        
+        ${
+          tx.tags && tx.tags !== "None"
+            ? `
+          <div class="mt-1">
+            <span class="badge bg-info">${tx.tags}</span>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `
+        )
+        .join("");
+
+      // Add click handlers
+      document.querySelectorAll(".transaction-item").forEach((item) => {
+        item.addEventListener("click", function (e) {
+          if (!e.target.closest(".copy-btn-modal")) {
+            const txHash = this.dataset.txHash;
+            // Đóng modal và load giao dịch vào graph chính
+            bootstrap.Modal.getInstance(modal).hide();
+            if (window.loadGraph) {
+              window.loadGraph(txHash, true, true);
+            }
+          }
+        });
+      });
+
+      // Add copy functionality
+      document.querySelectorAll(".copy-btn-modal").forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const textToCopy = this.dataset.clipboardText;
+          const originalIcon = this.querySelector("i").className;
+
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            this.querySelector("i").className = "bi bi-check-lg text-success";
+            setTimeout(() => {
+              this.querySelector("i").className = originalIcon;
+            }, 1500);
+          });
+        });
+      });
+    }
+
+    function renderPagination(total, page, totalPages) {
+      totalPages = Math.max(1, totalPages);
+      currentPage = page;
+
+      if (totalPages <= 1) {
+        pagination.innerHTML = "";
+        return;
+      }
+
+      let paginationHTML = "";
+
+      // Previous button
+      paginationHTML += `
+      <li class="page-item ${page <= 1 ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="${page - 1}">Trước</a>
+      </li>
+      `;
+
+      // Page numbers
+      const startPage = Math.max(1, page - 2);
+      const endPage = Math.min(totalPages, page + 2);
+
+      if (startPage > 1) {
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+        if (startPage > 2) {
+          paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+        <li class="page-item ${i === page ? "active" : ""}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>
+      `;
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+      }
+
+      // Next button
+      paginationHTML += `
+      <li class="page-item ${page >= totalPages ? "disabled" : ""}">
+        <a class="page-link" href="#" data-page="${page + 1}">Sau</a>
+      </li>
+      `;
+
+      pagination.innerHTML = paginationHTML;
+
+      // Add click handlers
+      pagination.querySelectorAll("a.page-link").forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          const newPage = parseInt(this.dataset.page);
+          if (newPage && newPage !== currentPage && !isLoading) {
+            loadTransactions(newPage);
+          }
+        });
+      });
+    }
+
+    function updateStats(total, anomalyCount) {
+      totalTransactionsEl.textContent = total.toLocaleString();
+      currentPageInfoEl.textContent = `${currentPage}/${totalPages}`;
+      anomalyCountEl.textContent = anomalyCount;
+    }
+
+    function getAnomalyBadgeClass(score) {
+      if (score >= 8) return "bg-danger";
+      if (score >= 6) return "bg-warning";
+      if (score >= 4) return "bg-info";
+      return "bg-success";
+    }
+  });
+</script>

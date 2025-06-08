@@ -90,6 +90,7 @@
   </head>
   <body>
     {% include "bitcoin/sidebar.html" %}
+    {% include "bitcoin/modal_address.html" %}
     <div class="container-fluid mt-3">
       <h1 class="text-center mb-4">Trình trực quan Đồ thị Địa chỉ Bitcoin</h1>
       <div class="row mb-3">
@@ -144,6 +145,15 @@
                   title="Mở rộng tất cả node con chưa truy vấn"
                 >
                   <i class="bi bi-arrows-angle-expand"></i> Mở rộng 1 Bậc
+                </button>
+          
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  data-bs-toggle="modal"
+                  data-bs-target="#addressModal"
+                  title="Xem danh sách địa chỉ"
+                >
+                  <i class="bi bi-geo-alt"></i> Danh sách Địa chỉ
                 </button>
                 <div class="form-check form-switch d-inline-block ms-2">
                   <input

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-23@f#2ej6_y#0nfn6h(+688e2!3wlfs7gbvd(z2@pn=m#!m+!=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bitcoin',  # Custom app for Bitcoin functionality
+    'import_data',
 ]
 
 MIDDLEWARE = [

@@ -16,4 +16,10 @@ urlpatterns = [
       # URL cho trang danh sách giao dịch
     path('list-tx/', views.list_tx_view, name='list_tx_view'),
     path('api/transactions/list/', views.get_transactions_list, name='get_transactions_list'),
+    # URL cho modal giao dịch
+    path('api/transactions/modal/', views.get_transactions_modal, name='get_transactions_modal'),
+    # URL cho modal địa chỉ
+    path('api/addresses/modal/', views.get_addresses_modal, name='get_addresses_modal'),
+    # URL cho modal cluster
+    path('api/clusters/modal/', views.get_clusters_modal, name='get_clusters_modal'),
 ]

@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import logging
 from collections import defaultdict
 from datetime import timezone
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -542,4 +543,263 @@ def get_transactions_list(request):
     
     except Exception as e:
         logger.error(f"Lỗi khi lấy danh sách giao dịch: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'Lỗi nội bộ máy chủ: {str(e)}'}, status=500)
+    # --- API LẤY DANH SÁCH GIAO DỊCH CHO MODAL ---
+def get_transactions_modal(request):
+    """API endpoint để lấy danh sách giao dịch cho modal với phân trang."""
+    try:
+        # Lấy các tham số từ request
+        limit = int(request.GET.get('limit', 20))
+        offset = int(request.GET.get('offset', 0))
+        sort = request.GET.get('sort', 'time_desc')
+        
+        # Giới hạn số lượng kết quả trả về
+        if limit > 100:
+            limit = 100
+        
+        # Bắt đầu với tất cả các giao dịch
+        query = Transaction.objects.all()
+        
+        # Áp dụng sắp xếp
+        if sort == 'time_desc':
+            query = query.order_by('-time')
+        elif sort == 'time_asc':
+            query = query.order_by('time')
+        elif sort == 'anomaly_desc':
+            query = query.order_by('-anomaly_score', '-time')
+        elif sort == 'fee_desc':
+            query = query.order_by('-fee', '-time')
+        else:
+            query = query.order_by('-time')  # Default
+        
+        # Đếm tổng số giao dịch
+        total_count = query.count()
+        
+        # Áp dụng phân trang
+        transactions = query[offset:offset + limit]
+        
+        # Chuẩn bị dữ liệu trả về
+        transactions_list = []
+        anomaly_count = 0
+        
+        for tx in transactions:
+            if tx.anomaly_score >= 6:  # Điểm bất thường từ 6 trở lên
+                anomaly_count += 1
+                
+            # Lấy tổng input và output
+            total_input = TxInput.objects.filter(transaction=tx).aggregate(
+                total=models.Sum('prev_value'))['total'] or 0
+            total_output = TxOutput.objects.filter(transaction=tx).aggregate(
+                total=models.Sum('value'))['total'] or 0
+            
+            transactions_list.append({
+                'tx_hash': tx.hash,
+                'time': tx.time.strftime('%Y-%m-%d %H:%M') if tx.time else 'Unknown',
+                'block_height': tx.block.height if tx.block else None,
+                'fee': tx.fee,
+                'total_input': total_input,
+                'total_output': total_output,
+                'tags': tx.tags or 'None',
+                'anomaly_score': tx.anomaly_score
+            })
+        
+        # Tính toán thông tin phân trang
+        total_pages = (total_count + limit - 1) // limit  # Ceiling division
+        current_page = (offset // limit) + 1
+        
+        return JsonResponse({
+            'transactions': transactions_list,
+            'total': total_count,
+            'page': current_page,
+            'total_pages': total_pages,
+            'limit': limit,
+            'anomaly_count': anomaly_count
+        })
+    
+    except Exception as e:
+        logger.error(f"Lỗi khi lấy danh sách giao dịch modal: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'Lỗi nội bộ máy chủ: {str(e)}'}, status=500)
+
+def get_addresses_modal(request):
+    """API endpoint để lấy danh sách địa chỉ cho modal với phân trang."""
+    try:
+        # Lấy các tham số từ request
+        limit = int(request.GET.get('limit', 20))
+        offset = int(request.GET.get('offset', 0))
+        sort = request.GET.get('sort', 'tx_count_desc')
+        tag = request.GET.get('tag', '')
+        min_tx = request.GET.get('min_tx', '')
+        
+        # Giới hạn số lượng kết quả trả về
+        if limit > 100:
+            limit = 100
+        
+        # Bắt đầu với tất cả các địa chỉ
+        query = Address.objects.all()
+        
+        # Lọc theo tag nếu có
+        if tag:
+            query = query.filter(tags__icontains=tag)
+        
+        # Lọc theo số giao dịch tối thiểu nếu có
+        if min_tx:
+            try:
+                min_tx_count = int(min_tx)
+                query = query.filter(tx_count__gte=min_tx_count)
+            except ValueError:
+                pass
+        
+        # Áp dụng sắp xếp (bỏ balance_desc vì không có trường balance)
+        if sort == 'tx_count_desc':
+            query = query.order_by('-tx_count')
+        elif sort == 'tx_count_asc':
+            query = query.order_by('tx_count')
+        elif sort == 'first_seen_desc':
+            query = query.order_by('-first_seen')
+        elif sort == 'last_seen_desc':
+            query = query.order_by('-last_seen')
+        else:
+            query = query.order_by('-tx_count')  # Default
+        
+        # Đếm tổng số địa chỉ
+        total_count = query.count()
+        
+        # Áp dụng phân trang
+        addresses = query[offset:offset + limit]
+        
+        # Chuẩn bị dữ liệu trả về
+        addresses_list = []
+        clustered_count = 0
+        high_reuse_count = 0
+        
+        for addr in addresses:
+            if addr.tags:
+                if 'clustered' in addr.tags.lower():
+                    clustered_count += 1
+                if 'high_reuse' in addr.tags.lower():
+                    high_reuse_count += 1
+            
+            # Tính số dư từ UTXO chưa chi tiêu
+            balance = TxOutput.objects.filter(
+                address=addr, 
+                is_spent=False
+            ).aggregate(total=models.Sum('value'))['total'] or 0
+            
+            addresses_list.append({
+                'address': addr.address,
+                'balance': balance,
+                'tx_count': addr.tx_count or 0,
+                'first_seen': addr.first_seen.strftime('%Y-%m-%d') if addr.first_seen else None,
+                'last_seen': addr.last_seen.strftime('%Y-%m-%d') if addr.last_seen else None,
+                'tags': addr.tags or 'None'
+            })
+        
+        # Tính toán thông tin phân trang
+        total_pages = (total_count + limit - 1) // limit  # Ceiling division
+        current_page = (offset // limit) + 1
+        
+        return JsonResponse({
+            'addresses': addresses_list,
+            'total': total_count,
+            'page': current_page,
+            'total_pages': total_pages,
+            'limit': limit,
+            'clustered_count': clustered_count,
+            'high_reuse_count': high_reuse_count
+        })
+    
+    except Exception as e:
+        logger.error(f"Lỗi khi lấy danh sách địa chỉ modal: {str(e)}", exc_info=True)
+        return JsonResponse({'error': f'Lỗi nội bộ máy chủ: {str(e)}'}, status=500)
+
+def get_clusters_modal(request):
+    """API endpoint để lấy danh sách clusters cho modal với phân trang."""
+    try:
+        # Lấy các tham số từ request
+        limit = int(request.GET.get('limit', 20))
+        offset = int(request.GET.get('offset', 0))
+        sort = request.GET.get('sort', 'address_count_desc')
+        min_address = request.GET.get('min_address', '')
+        max_address = request.GET.get('max_address', '')
+        
+        # Giới hạn số lượng kết quả trả về
+        if limit > 100:
+            limit = 100
+        
+        # Bắt đầu với tất cả các cluster
+        query = AddressCluster.objects.all()
+        
+        # Lọc theo số địa chỉ tối thiểu nếu có
+        if min_address:
+            try:
+                min_addr_count = int(min_address)
+                query = query.filter(address_count__gte=min_addr_count)
+            except ValueError:
+                pass
+        
+        # Lọc theo số địa chỉ tối đa nếu có
+        if max_address:
+            try:
+                max_addr_count = int(max_address)
+                query = query.filter(address_count__lte=max_addr_count)
+            except ValueError:
+                pass
+        
+        # Áp dụng sắp xếp
+        if sort == 'address_count_desc':
+            query = query.order_by('-address_count')
+        elif sort == 'address_count_asc':
+            query = query.order_by('address_count')
+        elif sort == 'created_desc':
+            query = query.order_by('-created_at')
+        elif sort == 'updated_desc':
+            query = query.order_by('-updated_at')
+        else:
+            query = query.order_by('-address_count')  # Default
+        
+        # Đếm tổng số cluster
+        total_count = query.count()
+        
+        # Áp dụng phân trang
+        clusters = query[offset:offset + limit]
+        
+        # Chuẩn bị dữ liệu trả về
+        clusters_list = []
+        large_clusters_count = 0  # Cluster có > 50 địa chỉ
+        with_notes_count = 0
+        
+        for cluster in clusters:
+            if cluster.address_count >= 50:
+                large_clusters_count += 1
+            if cluster.notes and cluster.notes.strip():
+                with_notes_count += 1
+                
+            clusters_list.append({
+                'cluster_id': cluster.cluster_id,
+                'address_count': cluster.address_count,
+                'created_at': cluster.created_at.strftime('%Y-%m-%d') if cluster.created_at else None,
+                'updated_at': cluster.updated_at.strftime('%Y-%m-%d') if cluster.updated_at else None,
+                'notes': cluster.notes or None
+            })
+        
+        # Tính toán thông tin phân trang
+        total_pages = (total_count + limit - 1) // limit  # Ceiling division
+        current_page = (offset // limit) + 1
+        
+        # Đếm cluster lớn và có ghi chú trong toàn bộ dataset (không chỉ trang hiện tại)
+        total_large_clusters = AddressCluster.objects.filter(address_count__gte=50).count()
+        total_with_notes = AddressCluster.objects.exclude(notes__isnull=True).exclude(notes__exact='').count()
+        
+        return JsonResponse({
+            'clusters': clusters_list,
+            'total': total_count,
+            'page': current_page,
+            'total_pages': total_pages,
+            'limit': limit,
+            'large_clusters_count': total_large_clusters,
+            'with_notes_count': total_with_notes
+        })
+    
+    except Exception as e:
+        logger.error(f"Lỗi khi lấy danh sách cluster modal: {str(e)}", exc_info=True)
         return JsonResponse({'error': f'Lỗi nội bộ máy chủ: {str(e)}'}, status=500)

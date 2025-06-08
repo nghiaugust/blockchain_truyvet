@@ -1,4 +1,3 @@
-# blockchain/management/commands/import_block_data.py
 import json
 import os
 from datetime import datetime, timezone
@@ -13,7 +12,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('json_file', type=str, help='The path to the JSON file to import.')
 
-    @transaction.atomic # Đảm bảo toàn bộ khối được nhập hoặc không gì cả
     def handle(self, *args, **kwargs):
         json_path = kwargs['json_file']
 
@@ -25,11 +23,26 @@ class Command(BaseCommand):
 
         try:
             with open(json_path, 'r', encoding='utf-8') as file:
-                block_data = json.load(file)
+                data = json.load(file)
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error reading JSON file: {str(e)}'))
             return
 
+        # Kiểm tra cấu trúc JSON và xử lý
+        if 'blocks' in data:
+            # Trường hợp có bọc ngoài với key "blocks"
+            blocks_data = data['blocks']
+            self.stdout.write(f'Found {len(blocks_data)} blocks in the file.')
+            
+            for block_data in blocks_data:
+                self._process_single_block(block_data)
+        else:
+            # Trường hợp JSON trực tiếp là một block
+            self.stdout.write('Processing single block...')
+            self._process_single_block(data)
+
+    @transaction.atomic # Đảm bảo toàn bộ khối được nhập hoặc không gì cả
+    def _process_single_block(self, block_data):
         try:
             # 1. Tạo hoặc lấy Block
             block_time = datetime.fromtimestamp(block_data.get('time', 0), tz=timezone.utc)
@@ -153,10 +166,7 @@ class Command(BaseCommand):
             # Cập nhật FK cho Inputs và Outputs
             for inp in inputs_to_create:
                 inp.transaction = tx_map[inp.transaction.hash] # Gán đối tượng Transaction đã lưu
-                # Nếu có prev_tx_index, chúng ta cần tìm hash tương ứng
-                # Tạm thời để trống việc ánh xạ tx_index -> hash, giả sử prev_tx_hash đã có
-                # Hoặc bạn cần một cơ chế map tx_index -> hash (ví dụ: một bảng riêng hoặc tra cứu)
-            
+                
             for out in outputs_to_create:
                 out.transaction = tx_map[out.transaction.hash] # Gán đối tượng Transaction đã lưu
 
@@ -166,12 +176,6 @@ class Command(BaseCommand):
             self.stdout.write(f'Created {len(inputs_to_create)} inputs and {len(outputs_to_create)} outputs.')
 
             # 6. Cập nhật trạng thái 'is_spent' (Bước Nâng cao)
-            # Bước này phức tạp vì cần ánh xạ tx_index -> hash và có thể
-            # các giao dịch trước đó chưa có trong DB. Cách tiếp cận tốt hơn
-            # là chạy một tác vụ riêng để cập nhật 'is_spent' định kỳ.
-            # Tuy nhiên, chúng ta có thể thử cập nhật những UTXO được chi tiêu *trong cùng khối*.
-            
-            # Lấy map tx_index -> hash cho khối này
             tx_index_to_hash_map = {tx.tx_index: tx.hash for tx in tx_map.values()}
             
             outputs_to_update_ids = []
@@ -199,18 +203,14 @@ class Command(BaseCommand):
                     output.is_spent = True
                     output.spending_tx_hash = spending_hash
                     output.spending_input_index = spending_idx
-                    # TxOutput.objects.filter(pk=output.pk).update(...) # Cách 1: Update từng cái (chậm)
                 
-                # Cách 2: Dùng bulk_update (nếu có django-extensions hoặc tự viết)
-                # Hoặc dùng case/when để update nhiều bản ghi 1 lúc (phức tạp)
-                # Tạm dùng cách đơn giản:
                 TxOutput.objects.bulk_update(outputs_found, ['is_spent', 'spending_tx_hash', 'spending_input_index'], batch_size=500)
                 self.stdout.write(f'Updated {len(outputs_found)} outputs spent within the block.')
 
             self.stdout.write(self.style.SUCCESS(f'Successfully imported all data for block {block.height}'))
 
         except IntegrityError as e:
-             self.stdout.write(self.style.ERROR(f'Database Integrity Error: {str(e)}. Might indicate data already exists or inconsistency.'))
+            self.stdout.write(self.style.ERROR(f'Database Integrity Error: {str(e)}. Might indicate data already exists or inconsistency.'))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'An unexpected error occurred: {str(e)}'))
             # Cần có cơ chế log lỗi chi tiết hơn ở đây
