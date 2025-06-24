@@ -1,0 +1,224 @@
+{% include "bitcoin/sidebar.html" %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Tracker - Công cụ Phân tích và Truy vết Bitcoin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .hero-section {
+            /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+            background: linear-gradient(135deg, #667eea 0%, #5ac198 100%);
+            color: white;
+            padding: 5rem 0;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: 100%;
+            color: #333;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            /* background: linear-gradient(45deg, #667eea, #5ac198); */
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+            color: #333;
+        }
+
+        .feature-section {
+            padding: 5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="hero-title">Bitcoin Tracker</h1>
+                    <p class="hero-subtitle">Trình truy vết và phân tích giao dịch Bitcoin</p>
+                    <a href="{% url 'bitcoin:graph_view' %}" class="cta-button">
+                        <i class="bi bi-diagram-3 me-2"></i>Bắt đầu phân tích
+                    </a>
+                    <a href="{% url 'guide_page:help' %}" class="cta-button">
+                        <i class="bi bi-back"></i> Tới trang hướng dẫn
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Features Section -->
+    <section class="feature-section">
+        <div class="container">
+            <h2 class="section-title">Các chức năng chính</h2>
+            
+            <div class="row">
+                <!-- Address Graph -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-diagram-3 feature-icon"></i>
+                        <h4>Đồ thị địa chỉ Bitcoin</h4>
+                        <p class="mb-3">Trực quan hóa mạng lưới các địa chỉ Bitcoin và mối quan hệ giữa chúng qua các giao dịch</p>
+                        <a href="{% url 'bitcoin:graph_view' %}" class="btn btn-primary">
+                            <i class="bi bi-eye me-1"></i>Xem đồ thị
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Transaction Graph -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-arrow-left-right feature-icon"></i>
+                        <h4>Đồ thị giao dịch</h4>
+                        <p class="mb-3">Phân tích chi tiết từng giao dịch Bitcoin với đồ thị input-output trực quan</p>
+                        <a href="{% url 'bitcoin:tx_graph_view' %}" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>Phân tích TX
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Cluster Graph -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-collection feature-icon"></i>
+                        <h4>Đồ thị cụm địa chỉ</h4>
+                        <p class="mb-3">Nhóm các địa chỉ liên quan và hiển thị mối quan hệ giữa các cụm địa chỉ</p>
+                        <a href="{% url 'bitcoin:cluster_graph_view' %}" class="btn btn-primary">
+                            <i class="bi bi-diagram-2 me-1"></i>Xem cụm
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-list-ul feature-icon"></i>
+                        <h4>Danh sách giao dịch</h4>
+                        <p class="mb-3">Duyệt và tìm kiếm trong danh sách đầy đủ các giao dịch Bitcoin</p>
+                        <a href="{% url 'bitcoin:list_tx_view' %}" class="btn btn-primary">
+                            <i class="bi bi-list-check me-1"></i>Xem danh sách
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Import Data -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-cloud-download feature-icon"></i>
+                        <h4>Import dữ liệu</h4>
+                        <p class="mb-3">Tải dữ liệu khối từ Bitcoin Core và phân tích chi tiết</p>
+                        <a href="{% url 'import_data:import_data' %}" class="btn btn-primary">
+                            <i class="bi bi-arrow-down-circle"></i> Thêm dữ liệu
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Address Analysis -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="glass-card text-center">
+                        <i class="bi bi-wallet2 feature-icon"></i>
+                        <h4>Phân tích địa chỉ</h4>
+                        <p class="mb-3">Xem chi tiết thông tin về bất kỳ địa chỉ Bitcoin nào và lịch sử giao dịch</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addressModal">
+                            <i class="bi bi-info-circle me-1"></i>Xem chi tiết
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5 text-center" style="background: linear-gradient(135deg, #667eea 0%, #5ac198 100%); color: white;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="display-4 mb-4">Blocktrain Tracking</h2>
+                    <p class="lead mb-4">Bitcoin qua các công cụ trực quan hóa</p>
+                    <a href="{% url 'bitcoin:graph_view' %}" class="cta-button me-3">
+                        <i class="bi bi-diagram-3 me-2"></i>Đồ thị địa chỉ
+                    </a>
+                    <a href="{% url 'bitcoin:tx_graph_view' %}" class="cta-button me-3">
+                        <i class="bi bi-arrow-left-right me-2"></i>Đồ thị giao dịch
+                    </a>
+                    <a href="{% url 'bitcoin:list_tx_view' %}" class="cta-button">
+                        <i class="bi bi-list-ul me-2"></i>Danh sách TX
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center" style="background-color: #343a40; color: white;">
+        <div class="container">
+            <p class="mb-0">&copy;Thêm nội dung footer ở đây nhé ạ</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
