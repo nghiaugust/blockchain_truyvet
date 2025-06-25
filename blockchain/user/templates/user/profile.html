@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ cá nhân - {{ user.email }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin: 2rem auto;
+            overflow: hidden;
+            max-width: 800px;
+        }
+        
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        
+        .back-btn:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-1px);
+        }
+        
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="profile-header">
+                <a href="{% url 'user:wallet' %}" class="back-btn">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                
+                <div class="profile-avatar">
+                    {% if profile.avatar %}
+                        <img src="{{ profile.avatar.url }}" alt="Avatar" class="w-100 h-100 rounded-circle object-fit-cover">
+                    {% else %}
+                        <i class="bi bi-person"></i>
+                    {% endif %}
+                </div>
+                
+                <h2>{{ user.email }}</h2>
+                <p class="mb-0">Thành viên từ {{ user.date_joined|date:"d/m/Y" }}</p>
+            </div>
+            
+            <!-- Profile Content -->
+            <div class="p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Account Information -->
+                <div class="info-card">
+                    <div class="section-title">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Thông tin tài khoản</span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> {{ user.email }}</p>
+                            <p><strong>Tên đăng nhập:</strong> {{ user.username }}</p>
+                            <p><strong>Trạng thái:</strong> 
+                                {% if user.is_verified %}
+                                    <span class="badge bg-success">Đã xác thực</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Chưa xác thực</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Tổng số dư:</strong> {{ profile.total_balance }} BTC</p>
+                            <p><strong>Tiền tệ ưa thích:</strong> {{ profile.preferred_currency }}</p>
+                            <p><strong>Thông báo:</strong> 
+                                {% if profile.notifications_enabled %}
+                                    <span class="badge bg-success">Bật</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Tắt</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Edit Profile Form -->
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Personal Information -->
+                    <div class="section-title">
+                        <i class="bi bi-person-gear"></i>
+                        <span>Thông tin cá nhân</span>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">Họ</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" 
+                                   value="{{ user.first_name }}" placeholder="Nhập họ">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Tên</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" 
+                                   value="{{ user.last_name }}" placeholder="Nhập tên">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="phone_number" class="form-label">Số điện thoại</label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                   value="{{ user.phone_number }}" placeholder="Nhập số điện thoại">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ profile.location }}" placeholder="Nhập địa chỉ">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Giới thiệu bản thân</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="3" 
+                                  placeholder="Viết vài dòng giới thiệu về bản thân...">{{ profile.bio }}</textarea>
+                    </div>
+                    
+                    <!-- Preferences -->
+                    <div class="section-title">
+                        <i class="bi bi-gear"></i>
+                        <span>Tùy chọn</span>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="preferred_currency" class="form-label">Tiền tệ ưa thích</label>
+                            <select class="form-control" id="preferred_currency" name="preferred_currency">
+                                <option value="BTC" {% if profile.preferred_currency == 'BTC' %}selected{% endif %}>Bitcoin (BTC)</option>
+                                <option value="USD" {% if profile.preferred_currency == 'USD' %}selected{% endif %}>US Dollar (USD)</option>
+                                <option value="VND" {% if profile.preferred_currency == 'VND' %}selected{% endif %}>Vietnamese Dong (VND)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="notifications_enabled" 
+                                       name="notifications_enabled" {% if profile.notifications_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications_enabled">
+                                    Nhận thông báo qua email
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Section -->
+                    <div class="section-title">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Bảo mật</span>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Đổi mật khẩu</h6>
+                                <p class="text-muted mb-0">Cập nhật mật khẩu định kỳ để bảo vệ tài khoản</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                    Đổi mật khẩu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Xác thực hai yếu tố (2FA)</h6>
+                                <p class="text-muted mb-0">Tăng cường bảo mật cho tài khoản của bạn</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button type="button" class="btn btn-outline-success" disabled>
+                                    Sắp có
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Save Button -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary-custom">
+                            <i class="bi bi-check-circle"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title" id="changePasswordModalLabel">
+                        <i class="bi bi-shield-lock"></i> Đổi mật khẩu
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control" id="current_password" name="current_password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_password1" class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new_password2" class="form-label">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="changePassword()">Đổi mật khẩu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function changePassword() {
+            // This is a placeholder function
+            // In a real implementation, you would send an AJAX request to change the password
+            alert('Chức năng đổi mật khẩu sẽ được triển khai trong phiên bản tiếp theo');
+        }
+    </script>
+</body>
+</html>

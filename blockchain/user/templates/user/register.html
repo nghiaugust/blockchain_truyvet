@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký - Bitcoin Wallet</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+      }
+
+      .register-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        max-width: 450px;
+        width: 100%;
+      }
+
+      .register-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .register-body {
+        padding: 2rem;
+      }
+
+      .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      }
+
+      .btn-primary-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 12px 30px;
+        font-weight: 600;
+        width: 100%;
+        color: white;
+      }
+
+      .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+      }
+
+      .register-footer {
+        text-align: center;
+        padding: 1rem 2rem 2rem;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .bitcoin-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .password-strength {
+        margin-top: 0.5rem;
+      }
+
+      .strength-meter {
+        height: 4px;
+        border-radius: 2px;
+        background: #e9ecef;
+        overflow: hidden;
+      }
+
+      .strength-fill {
+        height: 100%;
+        transition: width 0.3s ease, background-color 0.3s ease;
+        width: 0%;
+        background: #dc3545;
+      }
+
+      .strength-text {
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="register-container">
+        <div class="register-header">
+          <div class="bitcoin-icon">
+            <i class="bi bi-wallet2"></i>
+          </div>
+          <h2>Đăng ký</h2>
+          <p class="mb-0">Tạo tài khoản ví Bitcoin mới</p>
+        </div>
+
+        <div class="register-body">
+          {% if messages %} {% for message in messages %}
+          <div
+            class="alert alert-{{ message.tags }} alert-dismissible fade show"
+            role="alert"
+          >
+            {{ message }}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          {% endfor %} {% endif %}
+
+          <form method="post" id="registerForm">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="username" class="form-label">Tên đăng nhập *</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                  ><i class="bi bi-person"></i
+                ></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="username"
+                  name="username"
+                  placeholder="Nhập tên đăng nhập"
+                  required
+                />
+              </div>
+              <div class="form-text">Tên đăng nhập phải có ít nhất 3 ký tự</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email *</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                  ><i class="bi bi-envelope"></i
+                ></span>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  placeholder="Nhập email của bạn"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="password1" class="form-label">Mật khẩu *</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password1"
+                  name="password1"
+                  placeholder="Nhập mật khẩu"
+                  required
+                />
+              </div>
+              <div class="password-strength">
+                <div class="strength-meter">
+                  <div class="strength-fill" id="strengthFill"></div>
+                </div>
+                <div class="strength-text" id="strengthText">
+                  Mật khẩu phải có ít nhất 8 ký tự
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="password2" class="form-label"
+                >Xác nhận mật khẩu *</label
+              >
+              <div class="input-group">
+                <span class="input-group-text"
+                  ><i class="bi bi-lock-fill"></i
+                ></span>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password2"
+                  name="password2"
+                  placeholder="Nhập lại mật khẩu"
+                  required
+                />
+              </div>
+              <div id="passwordMatch" class="form-text"></div>
+            </div>
+
+            <div class="mb-3 form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="agreeTerms"
+                required
+              />
+              <label class="form-check-label" for="agreeTerms">
+                Tôi đồng ý với
+                <a href="#" class="text-decoration-none">Điều khoản sử dụng</a>
+                và
+                <a href="#" class="text-decoration-none">Chính sách bảo mật</a>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom">
+              <i class="bi bi-person-plus"></i> Đăng ký
+            </button>
+          </form>
+        </div>
+
+        <div class="register-footer">
+          <p>
+            Đã có tài khoản?
+            <a href="{% url 'user:login' %}" class="text-decoration-none"
+              >Đăng nhập ngay</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Password strength checker
+      document
+        .getElementById("password1")
+        .addEventListener("input", function () {
+          const password = this.value;
+          const strengthFill = document.getElementById("strengthFill");
+          const strengthText = document.getElementById("strengthText");
+
+          let strength = 0;
+          let text = "";
+          let color = "#dc3545";
+
+          if (password.length >= 8) strength += 1;
+          if (/[a-z]/.test(password)) strength += 1;
+          if (/[A-Z]/.test(password)) strength += 1;
+          if (/[0-9]/.test(password)) strength += 1;
+          if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+          switch (strength) {
+            case 0:
+            case 1:
+              text = "Mật khẩu rất yếu";
+              color = "#dc3545";
+              break;
+            case 2:
+              text = "Mật khẩu yếu";
+              color = "#fd7e14";
+              break;
+            case 3:
+              text = "Mật khẩu trung bình";
+              color = "#ffc107";
+              break;
+            case 4:
+              text = "Mật khẩu mạnh";
+              color = "#198754";
+              break;
+            case 5:
+              text = "Mật khẩu rất mạnh";
+              color = "#198754";
+              break;
+          }
+
+          strengthFill.style.width = strength * 20 + "%";
+          strengthFill.style.backgroundColor = color;
+          strengthText.textContent = text;
+          strengthText.style.color = color;
+        });
+
+      // Password match checker
+      document
+        .getElementById("password2")
+        .addEventListener("input", function () {
+          const password1 = document.getElementById("password1").value;
+          const password2 = this.value;
+          const matchDiv = document.getElementById("passwordMatch");
+
+          if (password2.length > 0) {
+            if (password1 === password2) {
+              matchDiv.textContent = "Mật khẩu khớp";
+              matchDiv.style.color = "#198754";
+              this.classList.remove("is-invalid");
+              this.classList.add("is-valid");
+            } else {
+              matchDiv.textContent = "Mật khẩu không khớp";
+              matchDiv.style.color = "#dc3545";
+              this.classList.remove("is-valid");
+              this.classList.add("is-invalid");
+            }
+          } else {
+            matchDiv.textContent = "";
+            this.classList.remove("is-valid", "is-invalid");
+          }
+        });
+
+      // Form validation
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", function (e) {
+          const password1 = document.getElementById("password1").value;
+          const password2 = document.getElementById("password2").value;
+          const username = document.getElementById("username").value;
+          const email = document.getElementById("email").value;
+          const agreeTerms = document.getElementById("agreeTerms").checked;
+
+          if (!username || username.length < 3) {
+            e.preventDefault();
+            alert("Tên đăng nhập phải có ít nhất 3 ký tự");
+            return;
+          }
+
+          if (!email) {
+            e.preventDefault();
+            alert("Vui lòng nhập email");
+            return;
+          }
+
+          if (password1.length < 8) {
+            e.preventDefault();
+            alert("Mật khẩu phải có ít nhất 8 ký tự");
+            return;
+          }
+
+          if (password1 !== password2) {
+            e.preventDefault();
+            alert("Mật khẩu xác nhận không khớp");
+            return;
+          }
+
+          if (!agreeTerms) {
+            e.preventDefault();
+            alert("Vui lòng đồng ý với điều khoản sử dụng");
+            return;
+          }
+        });
+    </script>
+  </body>
+</html>

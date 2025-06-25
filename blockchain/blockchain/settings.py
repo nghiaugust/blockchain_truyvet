@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'bitcoin',  # Custom app for Bitcoin functionality
     'import_data',
+    'user',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +131,14 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Sử dụng User mặc định của Django (không cần AUTH_USER_MODEL)
+
+# Login/Logout URLs
+LOGIN_URL = '/user/login/'
+LOGIN_REDIRECT_URL = '/user/wallet/'
+LOGOUT_REDIRECT_URL = '/user/login/'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Bitcoin Wallet</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        max-width: 400px;
+        width: 100%;
+      }
+
+      .login-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .login-body {
+        padding: 2rem;
+      }
+
+      .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      }
+
+      .btn-primary-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 12px 30px;
+        font-weight: 600;
+        width: 100%;
+        color: white;
+      }
+
+      .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+      }
+
+      .login-footer {
+        text-align: center;
+        padding: 1rem 2rem 2rem;
+        border-top: 1px solid #e9ecef;
+      }
+
+      .bitcoin-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="login-container">
+        <div class="login-header">
+          <div class="bitcoin-icon">
+            <i class="bi bi-wallet2"></i>
+          </div>
+          <h2>Đăng nhập</h2>
+          <p class="mb-0">Truy cập vào ví Bitcoin của bạn</p>
+        </div>
+
+        <div class="login-body">
+          {% if messages %} {% for message in messages %}
+          <div
+            class="alert alert-{{ message.tags }} alert-dismissible fade show"
+            role="alert"
+          >
+            {{ message }}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          {% endfor %} {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                  ><i class="bi bi-envelope"></i
+                ></span>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  placeholder="Nhập email của bạn"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Mật khẩu</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  name="password"
+                  placeholder="Nhập mật khẩu"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="rememberMe" />
+              <label class="form-check-label" for="rememberMe">
+                Ghi nhớ đăng nhập
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom">
+              <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+            </button>
+          </form>
+        </div>
+
+        <div class="login-footer">
+          <p>
+            Chưa có tài khoản?
+            <a href="{% url 'user:register' %}" class="text-decoration-none"
+              >Đăng ký ngay</a
+            >
+          </p>
+          <p>
+            <a href="#" class="text-decoration-none text-muted"
+              >Quên mật khẩu?</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
