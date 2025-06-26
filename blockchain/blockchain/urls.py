@@ -25,4 +25,5 @@ urlpatterns = [
     # path('guide/', include('guide_page.urls')),
     path('', introduction_view, name='home'),  # Trang chủ là Giới thiệu
     path('guide/', include('guide_page.urls')),
+    path('user/', include('user.urls')),
 ]

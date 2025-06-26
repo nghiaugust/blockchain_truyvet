@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ví Bitcoin - {{ user.email }}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .main-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin: 2rem auto;
+        overflow: hidden;
+      }
+
+      .wallet-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .balance-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        backdrop-filter: blur(10px);
+      }
+
+      .balance-amount {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .address-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-bottom: 1rem;
+        overflow: hidden;
+      }
+
+      .address-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+      }
+
+      .address-card.primary {
+        border-left: 5px solid #28a745;
+      }
+
+      .address-text {
+        font-family: "Courier New", monospace;
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        word-break: break-all;
+      }
+
+      .btn-custom {
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+      }
+
+      .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-1px);
+      }
+
+      .btn-success-custom {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        color: white;
+      }
+
+      .btn-danger-custom {
+        background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+        border: none;
+        color: white;
+      }
+
+      .modal-content {
+        border-radius: 15px;
+        border: none;
+      }
+
+      .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+      }
+
+      .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+      }
+
+      .user-menu {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-container">
+        <!-- Header với thông tin ví -->
+        <div class="wallet-header position-relative">
+          <!-- User Menu -->
+          <div class="user-menu dropdown">
+            <div
+              class="user-avatar"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="bi bi-person"></i>
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="{% url 'user:profile' %}"
+                  ><i class="bi bi-person-gear"></i> Hồ sơ</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a
+                  class="dropdown-item text-danger"
+                  href="{% url 'user:logout' %}"
+                  ><i class="bi bi-box-arrow-right"></i> Đăng xuất</a
+                >
+              </li>
+            </ul>
+          </div>
+
+          <h1><i class="bi bi-wallet2"></i> Ví Bitcoin</h1>
+          <p class="mb-0">Chào mừng, {{ user.email }}</p>
+
+          <div class="balance-card">
+            <h3>Tổng số dư</h3>
+            <div class="balance-amount">
+              {{ total_balance|default:"0.00000000" }} BTC
+            </div>
+            <small>≈ ${{ total_balance|default:"0"|floatformat:2 }} USD</small>
+          </div>
+        </div>
+
+        <!-- Thống kê -->
+        <div class="p-4">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">{{ wallet_addresses|length }}</div>
+              <div class="stat-label">Địa chỉ ví</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">
+                {{ total_balance|default:"0.00000000" }}
+              </div>
+              <div class="stat-label">BTC</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">
+                {% if primary_address %}1{% else %}0{% endif %}
+              </div>
+              <div class="stat-label">Địa chỉ chính</div>
+            </div>
+          </div>
+
+          <!-- Nút thêm địa chỉ -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Danh sách địa chỉ ví</h4>
+            <button
+              type="button"
+              class="btn btn-primary-custom btn-custom"
+              data-bs-toggle="modal"
+              data-bs-target="#addAddressModal"
+            >
+              <i class="bi bi-plus-circle"></i> Thêm địa chỉ
+            </button>
+          </div>
+
+          <!-- Danh sách địa chỉ ví -->
+          <div id="addressList">
+            {% if wallet_addresses %} {% for address in wallet_addresses %}
+            <div
+              class="address-card card {% if address.is_primary %}primary{% endif %}"
+            >
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-2">
+                      <h6 class="card-title mb-0">
+                        {% if address.label %} {{ address.label }} {% else %}
+                        Địa chỉ ví {{ forloop.counter }} {% endif %}
+                      </h6>
+                      {% if address.is_primary %}
+                      <span class="badge bg-success ms-2">Chính</span>
+                      {% endif %}
+                      <span class="badge bg-info ms-2"
+                        >{{ address.address_type }}</span
+                      >
+                    </div>
+                    <div class="address-text">{{ address.address }}</div>
+                    <small class="text-muted">
+                      Tạo lúc: {{ address.created_at|date:"d/m/Y H:i" }}
+                    </small>
+                  </div>
+                  <div class="col-md-4 text-end">
+                    <div class="mb-2">
+                      <strong>{{ address.balance }} BTC</strong>
+                    </div>
+                    <div class="btn-group" role="group">
+                      {% if not address.is_primary %}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-success-custom"
+                        onclick="setPrimaryAddress({{ address.id }})"
+                      >
+                        <i class="bi bi-star"></i>
+                      </button>
+                      {% endif %}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger-custom"
+                        onclick="deleteAddress({{ address.id }})"
+                        {%
+                        if
+                        address.is_primary
+                        %}disabled{%
+                        endif
+                        %}
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="empty-state">
+              <i class="bi bi-wallet"></i>
+              <h5>Chưa có địa chỉ ví nào</h5>
+              <p>Thêm địa chỉ ví đầu tiên để bắt đầu sử dụng</p>
+              <button
+                type="button"
+                class="btn btn-primary-custom btn-custom"
+                data-bs-toggle="modal"
+                data-bs-target="#addAddressModal"
+              >
+                <i class="bi bi-plus-circle"></i> Thêm địa chỉ đầu tiên
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal thêm địa chỉ ví -->
+    <div
+      class="modal fade"
+      id="addAddressModal"
+      tabindex="-1"
+      aria-labelledby="addAddressModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addAddressModalLabel">
+              <i class="bi bi-plus-circle"></i> Thêm địa chỉ ví mới
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="addAddressForm">
+              <div class="mb-3">
+                <label for="walletAddress" class="form-label"
+                  >Địa chỉ ví Bitcoin *</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="walletAddress"
+                  placeholder="Nhập địa chỉ ví Bitcoin"
+                  required
+                />
+                <div class="form-text">
+                  Ví dụ: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="walletLabel" class="form-label">Tên gợi nhớ</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="walletLabel"
+                  placeholder="Ví dụ: Ví chính, Ví giao dịch..."
+                />
+              </div>
+              <div class="mb-3">
+                <label for="addressType" class="form-label">Loại địa chỉ</label>
+                <select class="form-control" id="addressType">
+                  <option value="P2PKH">P2PKH (Pay to Public Key Hash)</option>
+                  <option value="P2SH">P2SH (Pay to Script Hash)</option>
+                  <option value="P2WPKH">
+                    P2WPKH (Pay to Witness Public Key Hash)
+                  </option>
+                  <option value="P2WSH">
+                    P2WSH (Pay to Witness Script Hash)
+                  </option>
+                  <option value="P2TR">P2TR (Pay to Taproot)</option>
+                </select>
+              </div>
+              <div class="mb-3 form-check">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="isPrimary"
+                />
+                <label class="form-check-label" for="isPrimary">
+                  Đặt làm địa chỉ ví chính
+                </label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary-custom btn-custom"
+              onclick="addAddress()"
+            >
+              <i class="bi bi-plus-circle"></i> Thêm địa chỉ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      function showAlert(type, message) {
+        const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+
+        // Insert at the top of main container
+        const container = document.querySelector(".main-container");
+        const firstChild = container.firstElementChild;
+        const alertDiv = document.createElement("div");
+        alertDiv.innerHTML = alertHtml;
+        alertDiv.className = "p-3";
+        container.insertBefore(alertDiv, firstChild);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+          alertDiv.remove();
+        }, 5000);
+      }
+
+      function addAddress() {
+        const address = document.getElementById("walletAddress").value.trim();
+        const label = document.getElementById("walletLabel").value.trim();
+        const addressType = document.getElementById("addressType").value;
+        const isPrimary = document.getElementById("isPrimary").checked;
+
+        if (!address) {
+          showAlert("danger", "Vui lòng nhập địa chỉ ví");
+          return;
+        }
+
+        // Basic Bitcoin address validation
+        if (address.length < 26 || address.length > 62) {
+          showAlert("danger", "Địa chỉ ví không hợp lệ");
+          return;
+        }
+
+        const data = {
+          address: address,
+          label: label,
+          address_type: addressType,
+          is_primary: isPrimary,
+        };
+
+        fetch('{% url "user:add_wallet_address" %}', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify(data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showAlert("success", data.message);
+              // Close modal
+              const modal = bootstrap.Modal.getInstance(
+                document.getElementById("addAddressModal")
+              );
+              modal.hide();
+              // Reset form
+              document.getElementById("addAddressForm").reset();
+              // Reload page to show new address
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            } else {
+              showAlert("danger", data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showAlert("danger", "Có lỗi xảy ra khi thêm địa chỉ ví");
+          });
+      }
+
+      function deleteAddress(addressId) {
+        if (!confirm("Bạn có chắc chắn muốn xóa địa chỉ ví này?")) {
+          return;
+        }
+
+        fetch(`/user/wallet/delete-address/${addressId}/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showAlert("success", data.message);
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            } else {
+              showAlert("danger", data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showAlert("danger", "Có lỗi xảy ra khi xóa địa chỉ ví");
+          });
+      }
+
+      function setPrimaryAddress(addressId) {
+        fetch(`/user/wallet/set-primary/${addressId}/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showAlert("success", data.message);
+              setTimeout(() => {
+                location.reload();
+              }, 1000);
+            } else {
+              showAlert("danger", data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showAlert("danger", "Có lỗi xảy ra khi đặt địa chỉ ví chính");
+          });
+      }
+    </script>
+  </body>
+</html>
