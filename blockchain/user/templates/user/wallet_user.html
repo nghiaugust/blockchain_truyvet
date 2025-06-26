@@ -1,4 +1,4 @@
-{% include "bitcoin/sidebar.html" %}
+{% load currency_filters %} {% include "bitcoin/sidebar.html" %}
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -224,7 +224,13 @@
             <div class="balance-amount">
               {{ total_balance|default:"0.00000000" }} BTC
             </div>
-            <small>≈ ${{ total_balance|default:"0"|floatformat:2 }} USD</small>
+            <small>
+              {% if total_balance_preferred and profile and profile.preferred_currency %}
+                ≈ {{ total_balance_preferred|format_currency:profile.preferred_currency }}
+              {% else %}
+                ≈ {{ total_balance|default:"0.00000000"|format_currency:"BTC" }}
+              {% endif %}
+            </small>
           </div>
         </div>
 
@@ -246,6 +252,20 @@
                 {% if primary_address %}1{% else %}0{% endif %}
               </div>
               <div class="stat-label">Địa chỉ chính</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">
+                {% if profile and profile.preferred_currency == 'USD' %}
+                  ${{ exchange_rates.USD|floatformat:0 }}
+                {% elif profile and profile.preferred_currency == 'VND' %}
+                  {{ exchange_rates.VND|floatformat:0 }} ₫
+                {% else %}
+                  1 ₿
+                {% endif %}
+              </div>
+              <div class="stat-label">
+                1 BTC = {% if profile and profile.preferred_currency %}{{ profile.preferred_currency }}{% else %}BTC{% endif %}
+              </div>
             </div>
           </div>
 

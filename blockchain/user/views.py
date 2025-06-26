@@ -9,6 +9,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db import transaction
 from .models import WalletAddress, UserProfile
+from .exchange_rates import ExchangeRateService
 from bitcoin.models import Address, TxOutput  # Import để tính số dư
 from django.db.models import Sum
 import json
@@ -136,35 +137,48 @@ def logout_view(request):
 
 @login_required
 def wallet_view(request):
-    """
-    View chính hiển thị ví cho người dùng đã đăng nhập
-    """
     user = request.user
+    wallet_addresses = WalletAddress.objects.filter(user=user)
+
+    total_balance_btc = sum(address.balance for address in wallet_addresses) # Tổng số dư ban đầu tính bằng BTC
+
+    profile = None
+    try:
+        profile = UserProfile.objects.get(user=user)
+    except UserProfile.DoesNotExist:
+        # Xử lý trường hợp profile không tồn tại, ví dụ: tạo mới hoặc sử dụng mặc định
+        pass
+
+    # Lấy tất cả tỷ giá hiện tại từ service
+    exchange_rates = ExchangeRateService.get_all_rates()
+
+    total_balance_preferred = total_balance_btc  # Khởi tạo với số dư BTC
+
+    # Nếu có profile và loại tiền tệ ưu tiên được đặt
+    if profile and profile.preferred_currency and profile.preferred_currency != 'BTC':
+        if profile.preferred_currency == 'USD':
+            # Chuyển đổi tổng số dư BTC sang USD
+            total_balance_preferred = ExchangeRateService.convert_btc_to_currency(total_balance_btc, 'USD')
+        elif profile.preferred_currency == 'VND':
+            # Chuyển đổi tổng số dư BTC sang VND
+            total_balance_preferred = ExchangeRateService.convert_btc_to_currency(total_balance_btc, 'VND')
+        # Thêm các trường hợp tiền tệ khác nếu cần
+    else:
+        # Nếu không có profile hoặc preferred_currency là BTC, giữ nguyên
+        total_balance_preferred = total_balance_btc
     
-    # Lấy hoặc tạo hồ sơ người dùng
-    profile, created = UserProfile.objects.get_or_create(user=user)
-    
-    # Lấy danh sách địa chỉ ví của người dùng
-    wallet_addresses = WalletAddress.objects.filter(user=user, is_active=True)
-    
-    # Tính tổng số dư
-    total_balance = sum(addr.balance for addr in wallet_addresses)
-    
-    # Cập nhật tổng số dư trong hồ sơ
-    if profile.total_balance != total_balance:
-        profile.total_balance = total_balance
-        profile.save()
-    
+    primary_address = wallet_addresses.filter(is_primary=True).first()
+
     context = {
         'user': user,
-        'profile': profile,
         'wallet_addresses': wallet_addresses,
-        'total_balance': total_balance,
-        'primary_address': wallet_addresses.filter(is_primary=True).first(),
+        'total_balance': total_balance_btc,  # Đây là tổng số BTC
+        'total_balance_preferred': total_balance_preferred,  # Đây là tổng số đã chuyển đổi sang tiền tệ ưu tiên
+        'profile': profile,
+        'primary_address': primary_address,
+        'exchange_rates': exchange_rates,  # Truyền tỷ giá để hiển thị 1 BTC = ...
     }
-    
     return render(request, 'user/wallet_user.html', context)
-
 
 @login_required
 @require_http_methods(["POST"])
