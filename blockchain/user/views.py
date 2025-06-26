@@ -11,6 +11,8 @@ from django.db import transaction
 from .models import WalletAddress, UserProfile
 import json
 import re
+from django.http import HttpResponseRedirect
+
 
 
 def register_view(request):
@@ -272,3 +274,11 @@ def profile_view(request):
     }
     
     return render(request, 'user/profile.html', context)
+
+def home_redirect_view(request):
+    """
+    Chuyển hướng trang gốc: nếu đăng nhập thì đến ví, không thì đến đăng nhập.
+    """
+    if request.user.is_authenticated:
+        return redirect('user:wallet')
+    return redirect('user:login')

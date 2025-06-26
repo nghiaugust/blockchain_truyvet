@@ -170,7 +170,7 @@
                         <h4>Import dữ liệu</h4>
                         <p class="mb-3">Tải dữ liệu khối từ Bitcoin Core và phân tích chi tiết</p>
                         <a href="{% url 'import_data:import_data' %}" class="btn btn-primary">
-                            <i class="bi bi-arrow-down-circle"></i> Thêm dữ liệu
+                            <i class="bi bi-arrow-down-circle me-1"></i>Thêm dữ liệu
                         </a>
                     </div>
                 </div>
@@ -179,11 +179,11 @@
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="glass-card text-center">
                         <i class="bi bi-wallet2 feature-icon"></i>
-                        <h4>Phân tích địa chỉ</h4>
-                        <p class="mb-3">Xem chi tiết thông tin về bất kỳ địa chỉ Bitcoin nào và lịch sử giao dịch</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addressModal">
-                            <i class="bi bi-info-circle me-1"></i>Xem chi tiết
-                        </button>
+                        <h4>Xem số dư ví</h4>
+                        <p class="mb-3">Xem chi tiết thông tin về số dư trong ví</p>
+                        <a href="{% url 'user:wallet' %}" class="btn btn-primary">
+                            <i class="bi bi-currency-bitcoin me-1"></i>Xem ví
+                        </a>
                     </div>
                 </div>
 

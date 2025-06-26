@@ -43,6 +43,16 @@
         </li>
         <li class="nav-item separator"></li>
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'user:profile' %}">
+            <i class="bi bi-person-circle me-2"></i>Thông tin cá nhân
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'user:wallet' %}">
+            <i class="bi bi-wallet me-2"></i>Ví tiền của tôi
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'guide_page:introduction' %}">
             <i class="bi bi-info-circle me-2"></i>Giới thiệu
           </a>
