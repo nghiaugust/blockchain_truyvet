@@ -9,11 +9,38 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db import transaction
 from .models import WalletAddress, UserProfile
+from bitcoin.models import Address, TxOutput  # Import để tính số dư
+from django.db.models import Sum
 import json
 import re
 from django.http import HttpResponseRedirect
 
 
+
+def calculate_address_balance(bitcoin_address):
+    """
+    Hàm tính số dư của một địa chỉ Bitcoin
+    """
+    try:
+        # Tìm address trong bitcoin app
+        address_obj = Address.objects.filter(address=bitcoin_address).first()
+        if not address_obj:
+            return 0  # Không tìm thấy địa chỉ trong database
+        
+        # Tính tổng UTXO (outputs chưa spend)
+        unspent_outputs = TxOutput.objects.filter(
+            address=address_obj,
+            is_spent=False  # Chỉ lấy outputs chưa được spend
+        ).aggregate(total=Sum('value'))['total'] or 0
+        
+        # Chuyển từ satoshi sang BTC
+        balance_btc = unspent_outputs / 100000000
+        return balance_btc
+        
+    except Exception as e:
+        print(f"Lỗi khi tính số dư cho {bitcoin_address}: {e}")
+        return 0
+    
 
 def register_view(request):
     """
@@ -163,13 +190,17 @@ def add_wallet_address(request):
         if WalletAddress.objects.filter(address=address).exists():
             return JsonResponse({'success': False, 'error': 'Địa chỉ ví đã tồn tại'})
         
-        # Tạo địa chỉ ví mới
+        # Tính số dư từ dữ liệu giao dịch
+        calculated_balance = calculate_address_balance(address)
+        
+        # Tạo địa chỉ ví mới với số dư đã tính
         wallet_address = WalletAddress.objects.create(
             user=request.user,
             address=address,
             label=label,
             address_type=address_type,
-            is_primary=is_primary
+            is_primary=is_primary,
+            balance=calculated_balance  # Lưu số dư đã tính
         )
         
         return JsonResponse({
@@ -234,6 +265,36 @@ def set_primary_address(request, address_id):
         return JsonResponse({
             'success': True,
             'message': 'Đặt làm địa chỉ ví chính thành công'
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Có lỗi xảy ra: {str(e)}'})
+
+
+@login_required
+@require_http_methods(["POST"])
+def refresh_address_balance(request, address_id):
+    """
+    Cập nhật lại số dư cho một địa chỉ ví cụ thể
+    """
+    try:
+        wallet_address = get_object_or_404(WalletAddress, id=address_id, user=request.user)
+        
+        # Tính lại số dư
+        old_balance = wallet_address.balance
+        new_balance = calculate_address_balance(wallet_address.address)
+        
+        # Cập nhật vào database
+        wallet_address.balance = new_balance
+        wallet_address.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Cập nhật số dư thành công',
+            'address': wallet_address.address,
+            'old_balance': str(old_balance),
+            'new_balance': str(new_balance),
+            'difference': str(new_balance - old_balance)
         })
         
     except Exception as e:
