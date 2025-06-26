@@ -16,9 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from guide_page.views import introduction_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('bitcoin.urls')),
     path('import_data/', include('import_data.urls')),
+    # path('guide/', include('guide_page.urls')),
+    path('', introduction_view, name='home'),  # Trang chủ là Giới thiệu
+    path('guide/', include('guide_page.urls')),
 ]
