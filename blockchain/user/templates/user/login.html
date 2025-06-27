@@ -1,3 +1,4 @@
+{% include "bitcoin/sidebar.html" %}
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -19,46 +20,67 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        margin: 0;
+        padding: 20px;
       }
 
       .login-container {
         background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         overflow: hidden;
         max-width: 400px;
         width: 100%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
       }
 
       .login-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 2rem;
+        padding: 1.2rem;
         text-align: center;
       }
 
       .login-body {
-        padding: 2rem;
+        padding: 1.5rem;
       }
 
       .form-control {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1.5px solid #e9ecef;
+        padding: 8px 12px;
+        font-size: 14px;
         transition: border-color 0.3s ease;
       }
 
       .form-control:focus {
         border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.2);
+      }
+
+      .input-group-text {
+        border-radius: 8px 0 0 8px;
+        border: 1.5px solid #e9ecef;
+        background-color: #f8f9fa;
+        font-size: 14px;
+        padding: 8px 10px;
+      }
+
+      .input-group .form-control {
+        border-radius: 0 8px 8px 0;
+        border-left: none;
       }
 
       .btn-primary-custom {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
-        border-radius: 10px;
-        padding: 12px 30px;
+        border-radius: 8px;
+        padding: 10px 20px;
         font-weight: 600;
+        font-size: 14px;
         width: 100%;
         color: white;
       }
@@ -70,12 +92,51 @@
 
       .login-footer {
         text-align: center;
-        padding: 1rem 2rem 2rem;
+        padding: 1rem 1.5rem 1.5rem;
         border-top: 1px solid #e9ecef;
       }
 
+      .login-footer p {
+        margin-bottom: 0.5rem;
+        font-size: 13px;
+      }
+
       .bitcoin-icon {
-        font-size: 3rem;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      .login-header h2 {
+        font-size: 1.3rem;
+        margin-bottom: 0.3rem;
+      }
+
+      .login-header p {
+        font-size: 0.85rem;
+        opacity: 0.9;
+      }
+
+      .form-label {
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+      }
+
+      .mb-3 {
+        margin-bottom: 1rem !important;
+      }
+
+      .form-check {
+        margin-bottom: 1rem !important;
+      }
+
+      .form-check-label {
+        font-size: 13px;
+      }
+
+      .alert {
+        padding: 0.5rem 0.75rem;
+        font-size: 13px;
         margin-bottom: 1rem;
       }
     </style>

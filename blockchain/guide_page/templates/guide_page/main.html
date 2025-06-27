@@ -96,13 +96,16 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="hero-title">Bitcoin Tracker</h1>
+                    <h1 class="hero-title">Trang chủ Bitcoin Tracker</h1>
                     <p class="hero-subtitle">Trình truy vết và phân tích giao dịch Bitcoin</p>
                     <a href="{% url 'bitcoin:graph_view' %}" class="cta-button">
-                        <i class="bi bi-diagram-3 me-2"></i>Bắt đầu phân tích
+                        <i class="bi bi-diagram-3 me-2"></i>Phân tích
                     </a>
                     <a href="{% url 'guide_page:help' %}" class="cta-button">
-                        <i class="bi bi-back"></i> Tới trang hướng dẫn
+                        <i class="bi bi-back me-2"></i>Hướng dẫn
+                    </a>
+                    <a href="{% url 'user:login' %}" class="cta-button">
+                        <i class="bi bi-person me-2"></i>Đăng nhập
                     </a>
                 </div>
             </div>
@@ -180,7 +183,7 @@
                     <div class="glass-card text-center">
                         <i class="bi bi-wallet2 feature-icon"></i>
                         <h4>Xem số dư ví</h4>
-                        <p class="mb-3">Xem chi tiết thông tin về số dư trong ví</p>
+                        <p class="mb-3">Xem chi tiết thông tin về số dư trong ví, yêu cầu cần phải đăng nhập</p>
                         <a href="{% url 'user:wallet' %}" class="btn btn-primary">
                             <i class="bi bi-currency-bitcoin me-1"></i>Xem ví
                         </a>
@@ -215,7 +218,30 @@
     <!-- Footer -->
     <footer class="py-4 text-center" style="background-color: #343a40; color: white;">
         <div class="container">
-            <p class="mb-0">&copy;Thêm nội dung footer ở đây nhé ạ</p>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <h6><i class="bi bi-shield-check me-2"></i>KMA Blockchain Tracer</h6>
+                    <p class="small mb-0 opacity-75">Nhóm nghiên cứu Blockchain - Học viện Kỹ thuật Mật mã</p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="https://github.com/nghiaugust/blockchain_truyvet" class="text-light opacity-75">
+                            <i class="bi bi-github fs-5"></i>
+                        </a>
+                        <a href="mailto:domanhnghiaforwork@gmail.com" class="text-light opacity-75">
+                            <i class="bi bi-envelope fs-5"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <small class="opacity-75">
+                        <i class="bi bi-geo-alt me-1"></i>Hà Nội, Việt Nam
+                    </small>
+                </div>
+            </div>
+            <hr class="my-3 opacity-25">
+            <p class="mb-0 small opacity-75">&copy; 2025 KMA Blockchain Tracer.</p>
+            <p class="small mb-0 opacity-75">Tham gia <a href="https://vietchain.1matrix.com/" target="_blank" class="text-light"><strong>VietChain Talents 2025</strong></a></p>
         </div>
     </footer>
 

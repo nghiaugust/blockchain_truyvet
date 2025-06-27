@@ -350,10 +350,10 @@ def profile_view(request):
     
     return render(request, 'user/profile.html', context)
 
-def home_redirect_view(request):
-    """
-    Chuyển hướng trang gốc: nếu đăng nhập thì đến ví, không thì đến đăng nhập.
-    """
-    if request.user.is_authenticated:
-        return redirect('user:wallet')
-    return redirect('user:login')
+# def home_redirect_view(request):
+#     """
+#     Chuyển hướng trang gốc: nếu đăng nhập thì đến trang chủ, không thì đến đăng nhập.
+#     """
+#     if request.user.is_authenticated:
+#         return redirect('guide_page:main')  # Chuyển hướng đến trang giới thiệu
+#     return redirect('user:login')

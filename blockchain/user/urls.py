@@ -27,7 +27,8 @@ app_name = 'user'
 
 urlpatterns = [
     # Root redirect (handled from main urls.py)
-    path('', views.home_redirect_view, name='home'),
+    # path('', views.home_redirect_view, name='home'),
+    # path('', views.guide_)
 
     # Authentication
     path('login/', views.login_view, name='login'),

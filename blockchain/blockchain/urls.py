@@ -29,13 +29,15 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from user.views import home_redirect_view  # import the view that checks login
+from guide_page.views import main_view
+# from user.views import home_redirect_view  # import the view that checks login
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
     # Main redirect logic at root
-    path('', home_redirect_view, name='home'),
+    # path('', home_redirect_view, name='home'),
+    path('', main_view, name='home'),  # Trang chủ là Giới thiệu
+
 
     path('import_data/', include('import_data.urls')),
     path('bitcoin/', include('bitcoin.urls')),  # Prefix bitcoin to avoid collision
