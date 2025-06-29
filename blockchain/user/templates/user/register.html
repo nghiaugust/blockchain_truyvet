@@ -21,84 +21,71 @@
         align-items: center;
         justify-content: center;
         margin: 0;
-        padding: 20px;
-        /* padding: 2rem 0; */
+        padding: 15px;
+      }
+
+      .container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .register-container {
-        /* background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        max-width: 450px;
-        width: 100%; */
         background: white;
-        border-radius: 15px;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         overflow: hidden;
-        max-width: 400px;
+        max-width: 380px;
         width: 100%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
       }
 
       .register-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        /* padding: 2rem; */
-        padding: 1.2rem;
+        padding: 1rem;
         text-align: center;
       }
 
       .register-body {
-        /* padding: 2rem; */
-        padding: 1.5rem;
+        padding: 1.25rem;
       }
 
       .form-control {
-        /* border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 12px 15px;
-        transition: border-color 0.3s ease; */
-        border-radius: 8px;
+        border-radius: 6px;
         border: 1.5px solid #e9ecef;
-        padding: 8px 12px;
-        font-size: 14px;
+        padding: 7px 10px;
+        font-size: 13px;
         transition: border-color 0.3s ease;
       }
 
       .form-control:focus {
-        /* border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25); */
         border-color: #667eea;
-        box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.2);
+        box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.15);
       }
 
       .input-group-text {
-        border-radius: 8px 0 0 8px;
+        border-radius: 6px 0 0 6px;
         border: 1.5px solid #e9ecef;
         background-color: #f8f9fa;
-        font-size: 14px;
-        padding: 8px 10px;
+        font-size: 13px;
+        padding: 7px 8px;
       }
 
       .input-group .form-control {
-        border-radius: 0 8px 8px 0;
+        border-radius: 0 6px 6px 0;
         border-left: none;
       }
 
       .btn-primary-custom {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
-        /* border-radius: 10px;
-        padding: 12px 30px; */
-        border-radius: 8px;
-        padding: 10px 20px;
+        border-radius: 6px;
+        padding: 8px 16px;
         font-weight: 600;
         width: 100%;
         color: white;
+        font-size: 14px;
       }
 
       .btn-primary-custom:hover {
@@ -108,63 +95,61 @@
 
       .register-footer {
         text-align: center;
-        /* padding: 1rem 2rem 2rem; */
-        padding: 1rem 1.5rem 1.5rem;
+        padding: 0.75rem 1.25rem 1rem;
         border-top: 1px solid #e9ecef;
       }
 
       .register-footer p {
-        margin-bottom: 0.5rem;
-        font-size: 13px;
+        margin-bottom: 0;
+        font-size: 12px;
       }
 
       .bitcoin-icon {
         font-size: 2rem;
         margin-bottom: 0.5rem;
-        /* font-size: 3rem;
-        margin-bottom: 1rem; */
       }
 
       .register-header h2 {
-        font-size: 1.3rem;
-        margin-bottom: 0.3rem;
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
       }
 
       .register-header p {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         opacity: 0.9;
+        margin-bottom: 0;
       }
 
       .form-label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.3rem;
       }
 
       .mb-3 {
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.75rem !important;
       }
 
       .form-check {
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.75rem !important;
       }
 
       .form-check-label {
-        font-size: 13px;
+        font-size: 12px;
       }
 
       .alert {
-        padding: 0.5rem 0.75rem;
-        font-size: 13px;
-        margin-bottom: 1rem;
+        padding: 0.4rem 0.6rem;
+        font-size: 12px;
+        margin-bottom: 0.75rem;
       }
 
       .password-strength {
-        margin-top: 0.5rem;
+        margin-top: 0.4rem;
       }
 
       .strength-meter {
-        height: 4px;
+        height: 3px;
         border-radius: 2px;
         background: #e9ecef;
         overflow: hidden;
@@ -178,8 +163,17 @@
       }
 
       .strength-text {
-        font-size: 0.8rem;
-        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
+      }
+
+      .form-text {
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
+      }
+
+      .input-group {
+        margin-bottom: 0;
       }
     </style>
   </head>
@@ -191,11 +185,12 @@
             <i class="bi bi-wallet2"></i>
           </div>
           <h2>Đăng ký</h2>
-          <p class="mb-0">Tạo tài khoản ví Bitcoin mới</p>
+          <p>Tạo tài khoản ví Bitcoin mới</p>
         </div>
 
         <div class="register-body">
-          {% if messages %} {% for message in messages %}
+          {% if messages %} 
+          {% for message in messages %}
           <div
             class="alert alert-{{ message.tags }} alert-dismissible fade show"
             role="alert"
@@ -208,16 +203,17 @@
               aria-label="Close"
             ></button>
           </div>
-          {% endfor %} {% endif %}
+          {% endfor %} 
+          {% endif %}
 
           <form method="post" id="registerForm">
             {% csrf_token %}
             <div class="mb-3">
               <label for="username" class="form-label">Tên đăng nhập *</label>
               <div class="input-group">
-                <span class="input-group-text"
-                  ><i class="bi bi-person"></i
-                ></span>
+                <span class="input-group-text">
+                  <i class="bi bi-person"></i>
+                </span>
                 <input
                   type="text"
                   class="form-control"
@@ -227,15 +223,14 @@
                   required
                 />
               </div>
-              <div class="form-text">Tên đăng nhập phải có ít nhất 3 ký tự</div>
             </div>
 
             <div class="mb-3">
               <label for="email" class="form-label">Email *</label>
               <div class="input-group">
-                <span class="input-group-text"
-                  ><i class="bi bi-envelope"></i
-                ></span>
+                <span class="input-group-text">
+                  <i class="bi bi-envelope"></i>
+                </span>
                 <input
                   type="email"
                   class="form-control"
@@ -264,20 +259,16 @@
                 <div class="strength-meter">
                   <div class="strength-fill" id="strengthFill"></div>
                 </div>
-                <div class="strength-text" id="strengthText">
-                  Mật khẩu phải có ít nhất 8 ký tự
-                </div>
+                <div class="strength-text" id="strengthText"></div>
               </div>
             </div>
 
             <div class="mb-3">
-              <label for="password2" class="form-label"
-                >Xác nhận mật khẩu *</label
-              >
+              <!-- <label for="password2" class="form-label">Xác nhận mật khẩu *</label> -->
               <div class="input-group">
-                <span class="input-group-text"
-                  ><i class="bi bi-lock-fill"></i
-                ></span>
+                <span class="input-group-text">
+                  <i class="bi bi-lock-fill"></i>
+                </span>
                 <input
                   type="password"
                   class="form-control"
@@ -290,21 +281,6 @@
               <div id="passwordMatch" class="form-text"></div>
             </div>
 
-            <div class="mb-3 form-check">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                id="agreeTerms"
-                required
-              />
-              <label class="form-check-label" for="agreeTerms">
-                Tôi đồng ý với
-                <a href="#" class="text-decoration-none">Điều khoản sử dụng</a>
-                và
-                <a href="#" class="text-decoration-none">Chính sách bảo mật</a>
-              </label>
-            </div>
-
             <button type="submit" class="btn btn-primary-custom">
               <i class="bi bi-person-plus"></i> Đăng ký
             </button>
@@ -314,9 +290,7 @@
         <div class="register-footer">
           <p>
             Đã có tài khoản?
-            <a href="{% url 'user:login' %}" class="text-decoration-none"
-              >Đăng nhập ngay</a
-            >
+            <a href="{% url 'user:login' %}" class="text-decoration-none">Đăng nhập ngay</a>
           </p>
         </div>
       </div>
@@ -324,6 +298,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      // Hide all alerts on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+          alert.style.display = 'none';
+        });
+      });
+
       // Password strength checker
       document
         .getElementById("password1")
@@ -331,6 +313,13 @@
           const password = this.value;
           const strengthFill = document.getElementById("strengthFill");
           const strengthText = document.getElementById("strengthText");
+
+          // Only show strength indicator if password is entered
+          if (password.length === 0) {
+            strengthFill.style.width = "0%";
+            strengthText.textContent = "";
+            return;
+          }
 
           let strength = 0;
           let text = "";
@@ -406,7 +395,6 @@
           const password2 = document.getElementById("password2").value;
           const username = document.getElementById("username").value;
           const email = document.getElementById("email").value;
-          const agreeTerms = document.getElementById("agreeTerms").checked;
 
           if (!username || username.length < 3) {
             e.preventDefault();
@@ -429,12 +417,6 @@
           if (password1 !== password2) {
             e.preventDefault();
             alert("Mật khẩu xác nhận không khớp");
-            return;
-          }
-
-          if (!agreeTerms) {
-            e.preventDefault();
-            alert("Vui lòng đồng ý với điều khoản sử dụng");
             return;
           }
         });
