@@ -552,7 +552,7 @@
           $("#clusterId").text(clusterId);
 
           $.ajax({
-            url: `/api/cluster/${clusterId}/graph/`,
+            url: `/bitcoin/api/cluster/${clusterId}/graph/`,
             method: "GET",
             success: function (data) {
               if (data.error) {
@@ -838,7 +838,7 @@
           }
 
           showLoading(true);
-          const url = `/api/address/${address}/transactions/`;
+          const url = `/bitcoin/api/address/${address}/transactions/`;
 
           queriedAddresses.add(address);
 

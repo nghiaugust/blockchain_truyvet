@@ -181,7 +181,7 @@
       const offset = (page - 1) * limit;
 
       fetch(
-        `/api/transactions/modal/?limit=${limit}&offset=${offset}&sort=${sort}`
+        `/bitcoin/api/transactions/modal/?limit=${limit}&offset=${offset}&sort=${sort}`
       )
         .then((response) => response.json())
         .then((data) => {

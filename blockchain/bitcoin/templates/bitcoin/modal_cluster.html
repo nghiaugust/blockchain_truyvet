@@ -218,7 +218,7 @@
       const maxAddress = clusterMaxAddressFilter.value;
       const offset = (page - 1) * limit;
 
-      let url = `/api/clusters/modal/?limit=${limit}&offset=${offset}&sort=${sort}`;
+      let url = `/bitcoin/api/clusters/modal/?limit=${limit}&offset=${offset}&sort=${sort}`;
       if (minAddress) url += `&min_address=${minAddress}`;
       if (maxAddress) url += `&max_address=${maxAddress}`;
 

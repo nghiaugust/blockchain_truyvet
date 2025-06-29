@@ -499,8 +499,8 @@
 
           showLoading(true);
           const url = isTxHash
-            ? `/api/transaction/${graphId}/graph/`
-            : `/api/address/${graphId}/transactions/`;
+            ? `/bitcoin/api/transaction/${graphId}/graph/`
+            : `/bitcoin/api/address/${graphId}/transactions/`;
 
           if (!isTxHash) {
             queriedAddresses.add(graphId);

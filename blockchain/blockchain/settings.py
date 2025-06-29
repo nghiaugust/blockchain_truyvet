@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'blockchain_truyvet',  # Thay bằng tên database của bạn
         'USER': 'root',  # Thay bằng user MySQL của bạn
-        'PASSWORD': 'Ndhd3011',  # Thay bằng mật khẩu
+        'PASSWORD': 'root',  # Thay bằng mật khẩu
         'HOST': 'localhost',
         'PORT': '3306',  # Cổng mặc định MySQL
         'OPTIONS': {

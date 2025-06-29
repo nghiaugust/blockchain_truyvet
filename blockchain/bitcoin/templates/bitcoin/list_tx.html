@@ -613,8 +613,8 @@
 
           showGraphLoading(true);
           const url = isTxHash
-            ? `/api/transaction/${graphId}/graph/`
-            : `/api/address/${graphId}/transactions/`;
+            ? `/bitcoin/api/transaction/${graphId}/graph/`
+            : `/bitcoin/api/address/${graphId}/transactions/`;
 
           if (!isTxHash) {
             queriedAddresses.add(graphId);
@@ -1066,7 +1066,7 @@
         );
         console.log("Gửi request với filters:", filters);
         $.ajax({
-          url: "/api/transactions/list/",
+          url: "/bitcoin/api/transactions/list/",
           method: "GET",
           data: filters,
           success: function (data) {
@@ -1215,7 +1215,7 @@
           if (!txHash) return;
 
           $.ajax({
-            url: `/api/transaction/${txHash}/graph/`,
+            url: `/bitcoin/api/transaction/${txHash}/graph/`,
             method: "GET",
             success: function (txData) {
               highlightTransaction(txHash);

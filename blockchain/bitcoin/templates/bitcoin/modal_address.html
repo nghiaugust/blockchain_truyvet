@@ -214,7 +214,7 @@
       const minTx = addressMinTxFilter.value;
       const offset = (page - 1) * limit;
 
-      let url = `/api/addresses/modal/?limit=${limit}&offset=${offset}&sort=${sort}`;
+      let url = `/bitcoin/api/addresses/modal/?limit=${limit}&offset=${offset}&sort=${sort}`;
       if (tag) url += `&tag=${tag}`;
       if (minTx) url += `&min_tx=${minTx}`;
 
