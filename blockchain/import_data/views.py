@@ -5,13 +5,14 @@ from django.core.management import call_command
 from django.db import transaction, IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from bitcoin.models import Block, Transaction, Address, TxInput, TxOutput
+from bitcoin.models import Block, Transaction, Address, TxInput, TxOutput, AddressCluster
 import requests
 import json
 import logging
 from datetime import datetime, timezone as dt_timezone
 from io import StringIO
 import sys
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,36 @@ def import_block_api(request):
             logger.error(f'Lỗi khi chạy heuristics: {str(e)}')
             # Không return error, chỉ warning vì import đã thành công
             logger.warning(f'Import block {block_height} thành công nhưng heuristics bị lỗi: {str(e)}')
+
+        # Bước 4: Chạy phân cụm địa chỉ (address clustering)
+        try:
+            logger.info(f'Bắt đầu chạy address clustering cho block {block_height}')
+            
+            # Capture output from clustering command
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            sys.stdout = captured_output = StringIO()
+            sys.stderr = captured_error = StringIO()
+            
+            call_command('groups', '--chunk-size=1000', f'--start-block={block_height}')
+            
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            clustering_output = captured_output.getvalue()
+            clustering_error = captured_error.getvalue()
+            
+            if clustering_error:
+                logger.warning(f'Clustering stderr: {clustering_error}')
+            
+            logger.info(f'Hoàn thành phân cụm địa chỉ cho block {block_height}')
+            logger.info(f'Clustering output: {clustering_output[:500]}...' if len(clustering_output) > 500 else f'Clustering output: {clustering_output}')
+            
+        except Exception as e:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            logger.error(f'Lỗi khi chạy address clustering: {str(e)}')
+            # Không return error, chỉ warning vì import đã thành công
+            logger.warning(f'Import block {block_height} thành công nhưng clustering bị lỗi: {str(e)}')
         
         # Lấy thông tin block vừa import
         imported_block_info = []
@@ -120,7 +151,7 @@ def import_block_api(request):
         
         return JsonResponse({
             'success': True, 
-            'message': f'Import thành công khối {block_height} và hoàn thành phân tích',
+            'message': f'Import thành công khối {block_height} và hoàn thành phân tích (heuristics + clustering)',
             'blocks': imported_block_info
         })
         
@@ -288,6 +319,18 @@ def _process_single_block(block_data):
         logger.info(f'Tạo {len(inputs_to_create)} inputs và {len(outputs_to_create)} outputs')
         logger.info(f'Hoàn thành import Block {block.height}')
         
+        # Thực hiện clustering ngay sau khi import xong
+        try:
+            logger.info(f'Bắt đầu clustering cho block {block.height}')
+            clustering_result = cluster_addresses_for_block(block.height)
+            if clustering_result:
+                logger.info(f'Clustering thành công: {clustering_result}')
+            else:
+                logger.warning(f'Clustering không thành công cho block {block.height}')
+        except Exception as e:
+            logger.error(f'Lỗi khi clustering block {block.height}: {str(e)}')
+            # Không raise error, chỉ log warning vì import đã thành công
+        
         return block.hash
 
     except IntegrityError as e:
@@ -296,3 +339,197 @@ def _process_single_block(block_data):
     except Exception as e:
         logger.error(f'Lỗi không mong muốn khi xử lý block: {str(e)}')
         raise Exception(f'Lỗi khi xử lý dữ liệu block: {str(e)}')
+
+# ============ ADDRESS CLUSTERING FUNCTIONS ============
+
+class UnionFind:
+    """
+    Union-Find data structure để phân cụm địa chỉ Bitcoin
+    """
+    def __init__(self):
+        self.parent = {}
+        self.rank = {}
+
+    def make_set(self, element):
+        """Khởi tạo một tập hợp cho phần tử."""
+        if element not in self.parent:
+            self.parent[element] = element
+            self.rank[element] = 0
+
+    def find(self, element):
+        """Tìm đại diện (root) của cụm chứa phần tử, sử dụng path compression."""
+        if element not in self.parent:
+            self.make_set(element)
+        if self.parent[element] != element:
+            self.parent[element] = self.find(self.parent[element])
+        return self.parent[element]
+
+    def union(self, element1, element2):
+        """Hợp nhất hai cụm, sử dụng union by rank."""
+        root1 = self.find(element1)
+        root2 = self.find(element2)
+        if root1 != root2:
+            if self.rank[root1] < self.rank[root2]:
+                root1, root2 = root2, root1
+            self.parent[root2] = root1
+            if self.rank[root1] == self.rank[root2]:
+                self.rank[root1] += 1
+
+
+def add_tag(obj, tag_to_add):
+    """Hàm trợ giúp để thêm tag mà không trùng lặp và trả về True nếu có thay đổi."""
+    current_tags = set(obj.tags.split(',') if obj.tags else [])
+    if tag_to_add not in current_tags:
+        current_tags.add(tag_to_add)
+        obj.tags = ','.join(filter(None, current_tags))
+        return True
+    return False
+
+
+def cluster_addresses_for_block(block_height):
+    """
+    Thực hiện phân cụm địa chỉ cho một block cụ thể
+    """
+    try:
+        logger.info(f'Bắt đầu clustering cho block {block_height}')
+        
+        # Lấy tất cả giao dịch trong block
+        block = Block.objects.get(height=block_height)
+        transactions = Transaction.objects.filter(block=block).prefetch_related('inputs', 'inputs__address')
+        
+        uf = UnionFind()
+        
+        # Khởi tạo tất cả địa chỉ trong block
+        for tx in transactions:
+            input_addresses = {inp.address.address for inp in tx.inputs.all() if inp.address}
+            for addr in input_addresses:
+                uf.make_set(addr)
+        
+        # Hợp nhất các địa chỉ đầu vào trong cùng giao dịch
+        clustered_tx_count = 0
+        for tx in transactions:
+            input_addresses = [inp.address.address for inp in tx.inputs.all() if inp.address]
+            if len(input_addresses) > 1:  # Chỉ xử lý giao dịch có nhiều địa chỉ đầu vào
+                first_addr = input_addresses[0]
+                for addr in input_addresses[1:]:
+                    uf.union(first_addr, addr)
+                clustered_tx_count += 1
+        
+        # Tạo danh sách cụm
+        clusters = {}
+        for addr in uf.parent:
+            root = uf.find(addr)
+            if root not in clusters:
+                clusters[root] = []
+            clusters[root].append(addr)
+        
+        # Lưu cụm vào database
+        cluster_count, address_count = save_clusters_to_db(clusters)
+        
+        logger.info(f'Block {block_height}: Phân tích {len(transactions)} giao dịch, '
+                   f'tìm thấy {clustered_tx_count} giao dịch có nhiều input, '
+                   f'tạo/cập nhật {cluster_count} cụm cho {address_count} địa chỉ')
+        
+        return {
+            'transactions_analyzed': len(transactions),
+            'multi_input_transactions': clustered_tx_count,
+            'clusters_created': cluster_count,
+            'addresses_clustered': address_count
+        }
+        
+    except Block.DoesNotExist:
+        logger.error(f'Block {block_height} không tồn tại')
+        return None
+    except Exception as e:
+        logger.error(f'Lỗi khi clustering block {block_height}: {str(e)}')
+        return None
+
+
+def save_clusters_to_db(clusters):
+    """Lưu các cụm vào bảng AddressCluster và cập nhật Address."""
+    cluster_update_list = []
+    address_update_list = []
+
+    for root, addresses in clusters.items():
+        if len(addresses) < 2:  # Bỏ qua cụm chỉ có 1 địa chỉ
+            continue
+            
+        # Tạo hoặc lấy AddressCluster
+        cluster_id = str(uuid.uuid4())
+        cluster, created = AddressCluster.objects.get_or_create(
+            cluster_id=cluster_id,
+            defaults={'address_count': len(addresses)}
+        )
+        if not created:
+            cluster.address_count = len(addresses)
+            cluster_update_list.append(cluster)
+
+        # Cập nhật Address
+        for addr_str in addresses:
+            try:
+                addr = Address.objects.get(address=addr_str)
+                addr.cluster = cluster
+                changed = add_tag(addr, 'clustered')
+                if changed or addr.cluster_id != cluster.cluster_id:
+                    address_update_list.append(addr)
+            except Address.DoesNotExist:
+                logger.warning(f"Address {addr_str} not found in database.")
+
+    # Cập nhật cơ sở dữ liệu
+    if cluster_update_list:
+        AddressCluster.objects.bulk_update(
+            cluster_update_list,
+            ['address_count', 'updated_at'],
+            batch_size=500
+        )
+    if address_update_list:
+        Address.objects.bulk_update(
+            address_update_list,
+            ['cluster', 'tags'],
+            batch_size=1000
+        )
+    
+    return len(cluster_update_list), len(address_update_list)
+
+
+@csrf_exempt
+def cluster_addresses_api(request):
+    """
+    API endpoint để chạy clustering cho một block cụ thể
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Phương thức không được hỗ trợ'})
+    
+    try:
+        data = json.loads(request.body)
+        block_height = data.get('block_height')
+        
+        if not block_height:
+            return JsonResponse({'success': False, 'message': 'Vui lòng nhập số khối'})
+        
+        # Chuyển đổi sang số nguyên
+        try:
+            block_height = int(block_height)
+        except ValueError:
+            return JsonResponse({'success': False, 'message': 'Số khối phải là một số nguyên'})
+        
+        # Thực hiện clustering
+        result = cluster_addresses_for_block(block_height)
+        
+        if result:
+            return JsonResponse({
+                'success': True,
+                'message': f'Clustering thành công cho block {block_height}',
+                'data': result
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': f'Không thể clustering block {block_height}'
+            })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Dữ liệu JSON không hợp lệ'})
+    except Exception as e:
+        logger.error(f'Lỗi không mong muốn trong clustering API: {str(e)}')
+        return JsonResponse({'success': False, 'message': f'Lỗi không mong muốn: {str(e)}'})
