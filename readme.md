@@ -51,7 +51,7 @@ cd blockchain_truyvet
 pip install -r requirements.txt
 ```
 3. **Thiết lập Database:**  
-- Tạo một database mới với tên blockchain\_truyvet:
+- Tạo một database mới với tên `blockchain_truyvet`:
 ```
 CREATE DATABASE blockchain_truyvet
 ```
@@ -62,7 +62,7 @@ CREATE DATABASE blockchain_truyvet
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'blockchain_truyvet',  # Thay bằng tên database của bạn
+        'NAME': 'blockchain_truyvet',
         'USER': 'root',  # Thay bằng user MySQL của bạn
         'PASSWORD': 'root',  # Thay bằng mật khẩu
         'HOST': 'localhost',
