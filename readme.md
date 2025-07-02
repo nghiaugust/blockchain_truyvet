@@ -37,6 +37,7 @@ Dưới đây là mô tả ngắn về các thành phần chính trong thư mụ
 
 * [Python 3.8+](https://www.python.org/downloads/)  
 * [pip](https://pip.pypa.io/en/stable/installation/) (thường được cài sẵn với Python)
+* **MySQL Server**: Đảm bảo MySQL Server đã được cài đặt và đang chạy trên hệ thống của bạn. Bạn có thể tải xuống từ trang chính thức của [MySQL](https://dev.mysql.com/downloads/)
 
 ### **Hướng dẫn Cài đặt**
 
@@ -49,9 +50,13 @@ cd blockchain_truyvet
 ```
 pip install -r requirements.txt
 ```
-3. **Cấu hình Database:**  
-   Tạo một database mới với tên blockchain\_truyvet.  
-   Mở file blockchain/blockchain/settings.py và cập nhật thông tin database như tên, người dùng, mật khẩu
+3. **Thiết lập Database:**  
+- Tạo một database mới với tên blockchain\_truyvet:
+```
+CREATE DATABASE blockchain_truyvet
+```
+
+- Mở file blockchain/blockchain/settings.py và cập nhật thông tin database như tên, người dùng, mật khẩu
 
 ```
 DATABASES = {
@@ -70,18 +75,19 @@ DATABASES = {
 ```
 
 4. Áp dụng Migration:  
-   Tạo các bảng cần thiết trong database.  
-   python manage.py migrate
-
-5. Nhập dữ liệu ban đầu:  
-   Chạy lệnh sau để nhập dữ liệu từ file block\_898421.json. Đảm bảo file này nằm trong thư mục data/.  
+- Tạo các bảng cần thiết trong database.  
 ```
-python manage.py import\_block\_data data/block\_898421.json
+python .\blockchain\manage.py migrate
+```
+5. Nhập dữ liệu ban đầu:  
+- Chạy lệnh sau để nhập dữ liệu từ file `block_898421.json`. Đảm bảo file này nằm trong thư mục `data/`.  
+```
+python .\blockchain\manage.py  import_block_data data/block_898421.json
 ```
 
 6. **Chạy phân tích Heuristics:**  
 ```
-python manage.py heuristics \--chunk-size 1000
+python .\blockchain\manage.py  heuristics --chunk-size 1000
 ```
 
 ## **🎮 Sử dụng**
@@ -89,17 +95,18 @@ python manage.py heuristics \--chunk-size 1000
 Khởi động server Django:
 
 ```
-python manage.py runserver  
+python .\blockchain\manage.py runserver  
 # Hoặc, nếu chạy với SSL (yêu cầu django-sslserver):  
-# python manage.py runsslserver
+# python .\blockchain\manage.py runsslserver
 ```
 
 Bây giờ bạn có thể truy cập ứng dụng web qua các đường dẫn sau:
 
-* **Danh sách Giao dịch**: [http://127.0.0.1:8000/list-tx/](http://127.0.0.1:8000/list-tx/)  
-* **Đồ thị tổng quan**: [http://127.0.0.1:8000/graph/](http://127.0.0.1:8000/graph/)  
-* **Đồ thị Giao dịch**: [http://127.0.0.1:8000/tx-graph/](http://127.0.0.1:8000/tx-graph/)  
-* **Trang nhập dữ liệu (nếu có giao diện web)**: [http://127.0.0.1:8000/import\_data/](http://127.0.0.1:8000/import_data/)
+* **Trang chủ**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)  
+* **Danh sách Giao dịch**: [http://127.0.0.1:8000/bitcoin/list-tx/](http://127.0.0.1:8000/bitcoin/list-tx/)  
+* **Đồ thị tổng quan**: [http://127.0.0.1:8000/bitcoin/graph/](http://127.0.0.1:8000/bitcoin/graph/)  
+* **Đồ thị Giao dịch**: [http://127.0.0.1:8000/bitcoin/tx-graph/](http://127.0.0.1:8000/bitcoin/tx-graph/)  
+* **Trang nhập dữ liệu**: [http://127.0.0.1:8000/import_data/](http://127.0.0.1:8000/import_data/)
 
 ## **👥 Đội ngũ phát triển**
 
