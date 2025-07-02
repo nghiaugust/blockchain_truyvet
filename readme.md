@@ -12,19 +12,19 @@
 
 ## **📂 Cấu trúc Dự án**
 
-Dưới đây là mô tả ngắn về các thành phần chính trong thư mục dự án. Các thư viện và gói phụ thuộc bên ngoài được quản lý thông qua tệp requirements.txt và được cài đặt vào môi trường Python của dự án.
+Dưới đây là mô tả ngắn về các thành phần chính trong thư mục dự án.
 ```
 .  
 ├── blockchain/              # Thư mục dự án Django chính  
 │   ├── bitcoin/             # App xử lý logic liên quan đến Bitcoin (models, views, v.v.)  
 │   ├── blockchain/          # App quản lý cấu hình project Django (chứa settings.py, urls.py gốc)  
-│   ├── guide\_page/          # App cho các trang hướng dẫn và thông tin  
-│   ├── import\_data/         # App chứa logic nhập dữ liệu từ các nguồn bên ngoài  
+│   ├── guide_page/          # App cho các trang hướng dẫn và thông tin  
+│   ├── import_data/         # App chứa logic nhập dữ liệu từ các nguồn bên ngoài  
 │   └── user/                # App quản lý người dùng (đăng ký, đăng nhập, hồ sơ)  
-│   └── \_\_init\_\_.py          # Khởi tạo gói Python  
+│   └── manage.py
 ├── data/                    # Thư mục chứa các tệp dữ liệu block thô (ví dụ: JSON)  
 ├── manage.py                # Tiện ích dòng lệnh của Django để quản lý dự án  
-├── block\_898421.json        # File dữ liệu block đầu vào mẫu  
+├── block_898421.json        # File dữ liệu block đầu vào mẫu  
 ├── README.md                # File hướng dẫn này  
 ├── LICENSE.md                  # File giấy phép của dự án  
 └── requirements.txt         # Danh sách các thư viện Python cần thiết cho dự án
