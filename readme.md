@@ -42,23 +42,23 @@ Dưới đây là mô tả ngắn về các thành phần chính trong thư mụ
 ### **Hướng dẫn Cài đặt**
 
 1. **Clone repository về máy:**
-```
-git clone https://github.com/nghiaugust/blockchain\_truyvet.git
+```bash
+git clone https://github.com/nghiaugust/blockchain_truyvet.git
 cd blockchain_truyvet
 ```
 2. Cài đặt các thư viện cần thiết trong project:  
-```
+```bash
 pip install -r requirements.txt
 ```
 3. **Thiết lập Database:**  
 - Tạo một database mới với tên `blockchain_truyvet`:
-```
+```sql
 CREATE DATABASE blockchain_truyvet
 ```
 
 - Mở file blockchain/blockchain/settings.py và cập nhật thông tin database như tên, người dùng, mật khẩu
 
-```
+```python
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -76,12 +76,12 @@ DATABASES = {
 
 4. Áp dụng Migration:  
 - Tạo các bảng cần thiết trong database.  
-```
+```bash
 python .\blockchain\manage.py migrate
 ```
 5. Nhập dữ liệu ban đầu:  
 - Chạy lệnh sau để nhập dữ liệu từ file `block_898421.json`. Đảm bảo file này nằm trong thư mục `data/`.  
-```
+```bash
 python .\blockchain\manage.py  import_block_data data/block_898421.json
 ```
 
@@ -93,8 +93,7 @@ python .\blockchain\manage.py  heuristics --chunk-size 1000
 ## **🎮 Sử dụng**
 
 Khởi động server Django:
-
-```
+```bash
 python .\blockchain\manage.py runserver  
 # Hoặc, nếu chạy với SSL (yêu cầu django-sslserver):  
 # python .\blockchain\manage.py runsslserver
