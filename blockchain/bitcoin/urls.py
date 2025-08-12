@@ -13,7 +13,18 @@ urlpatterns = [
     # URL cho cluster graph
     path('cluster-graph/', views.cluster_graph_view, name='cluster_graph_view'),
     path('api/cluster/<str:cluster_id>/graph/', views.get_cluster_graph_data, name='get_cluster_graph_data'),
-      # URL cho trang danh sách giao dịch
+    
+    # URL cho CoinJoin address selector
+    path('api/coinjoin-addresses/list/', views.get_coinjoin_addresses_list, name='get_coinjoin_addresses_list'),
+    
+    # URL cho CoinJoin Address Groups
+    path('coinjoin-groups/', views.coinjoin_address_groups_view, name='coinjoin_address_groups'),
+    path('api/coinjoin-groups/', views.get_coinjoin_address_groups, name='get_coinjoin_address_groups'),
+    path('api/coinjoin-groups/graph/', views.get_coinjoin_group_graph, name='get_coinjoin_group_graph'),
+    
+
+    
+    # URL cho trang danh sách giao dịch
     path('list-tx/', views.list_tx_view, name='list_tx_view'),
     path('api/transactions/list/', views.get_transactions_list, name='get_transactions_list'),
     # URL cho modal giao dịch

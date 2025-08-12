@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bitcoin',  # Custom app for Bitcoin functionality
-    'import_data',
+    'import_data.apps.ImportDataConfig',
     'guide_page',  # Custom app for guide page
     'user',
 ]
@@ -83,7 +83,7 @@ DATABASES = {
         'NAME': 'blockchain_truyvet',  # Thay bằng tên database của bạn
         'USER': 'root',  # Thay bằng user MySQL của bạn
         'PASSWORD': 'root',  # Thay bằng mật khẩu
-        'HOST': 'localhost',
+        'HOST': '172.20.156.222',
         'PORT': '3306',  # Cổng mặc định MySQL
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
